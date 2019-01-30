@@ -1,7 +1,6 @@
 from collections import Counter
+from spacy.tokens import Doc
 import string
-from .tools import count_totals
-
 
 def get_basetext(etext):
     # (i.e. combine "US" with "U.S.")
@@ -9,6 +8,56 @@ def get_basetext(etext):
     rmpunct = etext.translate(rmpunc_table)
     basetext = rmpunct.upper().replace(' ','')
     return basetext
+
+
+class ExtractEnts():
+    name = 'entities'
+    def __init__(self, use_ent_types=None):
+        #self.allents = list()
+        self.use_ent_types = use_ent_types
+        self.entmap = dict() # basetext -> list(entnames)
+        
+        # these will be set by spacy in the pipeline
+        Doc.set_extension('entlist', default=list())
+        Doc.set_extension('entmap', default=dict())
+        Doc.set_extension('entcts', default=dict())
+        
+
+    def __call__(self, doc):
+        
+        # merge multi-word entities
+        spans = list(doc.ents)
+        for span in spans:
+            span.merge()
+
+        # extract entities
+        if self.use_ent_types is None:
+            ents = [e for e in doc if e.ent_type > 0]
+        else:
+            ents = [e for e in doc if e.ent_type > 0 and e.ent_id_ in self.use_ent_types]
+        
+        # combine entities if they have same basetext
+        for i in range(len(ents)):
+            basetext = get_basetext(ents[i].text)
+            
+            if basetext not in self.entmap.keys():
+                self.entmap[basetext] = [ents[i].text,]
+            
+            elif ents[i].text not in self.entmap[basetext]:
+                self.entmap[basetext].append(ents[i].text)
+                
+            ents[i] = (self.entmap[basetext][0],ents[i])
+                       
+        # count entities in this list
+        entcts = dict(Counter([n for n,e in ents]))
+        
+        # set properties into pipeline
+        doc._.entlist = ents
+        doc._.entmap = self.entmap
+        doc._.entcts = entcts
+        
+        return doc
+
 
 
 def get_ent_obj(docs, use_ent_types=None):
@@ -70,43 +119,6 @@ def get_ents(docs, use_ent_types=None):
         entct = dict(Counter([n for n,e in ents]))
         entcts.append(entct)
     
-    #combine doc entity totals
-    #totals = dict()
-    #for ect in entcts:
-    #    for e,ct in ect.items():
-    #        if e not in totals:
-    #            totals[e] = 0
-    #        totals[e] += ct
     totals = count_totals(entcts)
         
     return entcts, totals
-
-
-
-'''
-
-
-        tokseq = list()
-        ents = list()
-        for tok in doc:
-            #print(tok, tok.ent_type)
-            if tok.ent_type in USE_ENT_IOB:
-                basetext = get_basetext(tok.text)
-                
-                if basetext not in entmap.keys():
-                    entmap[basetext] = [tok.text,]
-                    
-                elif tok.text not in entmap[basetext]:
-                    entmap[basetext].append(tok.text)
-                    
-                # add the first identified entity name to X
-                tokseq.append(entmap[basetext][0] + '*')
-                ents.append(entmap[basetext][0] + '*')
-                
-            else:
-                # token is regular text
-                tokseq.append(tok.lower_)
-
-
-'''
-

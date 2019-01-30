@@ -1,5 +1,8 @@
-from .ner import get_ent_obj
 from collections import Counter
+import string
+from spacy.tokens import Doc
+from .tools import count_totals
+
 
 
 def getverb(tok):
@@ -11,28 +14,85 @@ def getverb(tok):
         return tok.head
     else:
         None
-    #if tok.dep_ == "ROOT":
-        # base case: reached tree root
-    #if tok.pos_ in ("VERB", "ADV"):
-    #    return tok
-    #elif tok.dep_ == "ROOT":
-    #    return None
-    #else:
-        #print(tok)
-        #raise Exception('No verb was found in this parse.')
-    #    return None
-    #else:
-    #    return getverb(tok.head)
-
+        
 def get_nounverb(noun):
     relations = list()
     verb = getverb(noun)
     if verb is not None:
-    #    relations.append((noun,verb,))
         return (noun,verb)
-    #return relations
     else:
         return None
+
+
+class ExtractPrepositions():
+    name = 'prepositions'
+    def __init__(self,include_ents=False):
+        #self.phrases = list()
+        Doc.set_extension('prepphrases', default=list())
+        Doc.set_extension('prepphrasecounts', default=list())
+        
+    def __call__(self, doc):
+        
+        phrases = list()
+        for tok in doc:
+            if tok.pos_ == 'ADP':
+                pp = ''.join([t.orth_ + t.whitespace_ for t in tok.subtree])
+                phrases.append(pp)
+        
+        doc._.prepphrasecounts = dict(Counter(phrases))
+        doc._.prepphrases = phrases
+        
+        return doc
+
+class ExtractNounVerbs():
+    name = 'nounverbs'
+    def __init__(self,include_ents=False):
+        #self.phrases = list()
+        Doc.set_extension('nounverbs', default=list())
+        Doc.set_extension('nounverbcounts', default=list())
+        
+    def __call__(self, doc):
+        
+        #for span in list(doc.noun_chunks):
+        #    span.merge()
+        
+        nounverbs = list()
+        for tok in doc:
+            if tok.pos_ in ('PROPN', 'NOUN'):
+                nv = get_nounverb(tok)
+                if nv is not None:
+                    nounverbs.append((nv[0].text, nv[1].text))
+        
+        doc._.nounverbcounts = dict(Counter(nounverbs))
+        doc._.nounverbs = nounverbs
+        
+        return doc
+
+class ExtractEntVerbs():
+    name = 'entverbs'
+    def __init__(self,):
+        Doc.set_extension('entverbs', default=list())
+        Doc.set_extension('entverbcts', default=list())
+        
+    def __call__(self, doc):
+        # merge multi-word entities
+        spans = list(doc.ents)
+        for span in spans:
+            span.merge()
+        
+        
+        entverbs = list()
+        for ename, eobj in doc._.entlist:
+            nv = get_nounverb(eobj)
+            if nv is not None:
+                entverbs.append((nv[0].text, nv[1].text))
+        
+        doc._.entverbs = entverbs
+        doc._.entverbcts = dict(Counter(entverbs))
+        
+        return doc
+    
+    
 
 def get_entverbs(docs, use_ent_types=None):
     entobj = get_ent_obj(docs, use_ent_types)
@@ -47,12 +107,10 @@ def get_entverbs(docs, use_ent_types=None):
         
         docents.append(dict(Counter(nounverbs)))
     
+    totcts = count_totals(docents)
     #docentcts = [dict(Counter(ents)) for ents in docents]
     
-    return docents
-    
-
-
+    return docents, totcts
 
 
 def get_prepositions(docs):
@@ -68,30 +126,42 @@ def get_prepositions(docs):
         phrases = list()
         for token in doc:
             if token.pos_ == 'ADP':
-                pp = ''.join([tok.orth_ + tok.whitespace_ for tok in token.subtree])
+                pp = ''.join([tok.text + tok.whitespace_ for tok in token.subtree])
                 phrases.append(pp)
+                print(pp)
         allphrases.append(phrases)
     
     ctphrases = [dict(Counter(ph)) for ph in allphrases]
+    totcts = count_totals(ctphrases)
     
-    return ctphrases
+    return ctphrases, totcts
+
+
+
+
+
+
+
+
+
+def get_entverbs(docs, use_ent_types=None):
+    entobj = get_ent_obj(docs, use_ent_types)
     
-
+    docents = list()
+    for ents in entobj:
+        nounverbs = list()
+        for ename,eobj in ents:
+            nv = get_nounverb(eobj)
+            if nv is not None:
+                nounverbs.append((nv[0].text, nv[1].text))
+        
+        docents.append(dict(Counter(nounverbs)))
     
+    totcts = count_totals(docents)
+    #docentcts = [dict(Counter(ents)) for ents in docents]
     
+    return docents, totcts
     
-    
-
-
-
-
-
-
-
-
-
-
-
 
 
 
