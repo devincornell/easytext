@@ -43,6 +43,17 @@ class ExtractPrepositionsPipeline():
         doc._.prepphrases = phrases
         
         return doc
+    
+def extract_prepositions(docs, **kwargs):
+    eep = ExtractPrepositionsPipeline(**kwargs)
+    
+    for doc in docs:
+        # will modify doc object
+        eep.__call__(doc)
+    
+    ppcts = [d._.prepphrasecounts for d in docs]
+    return ppcts
+    
 
 class ExtractNounVerbsPipeline():
     name = 'nounverbs'
@@ -68,6 +79,21 @@ class ExtractNounVerbsPipeline():
         
         return doc
 
+def extract_nounverbs(docs, **kwargs):
+    eep = ExtractNounVerbsPipeline(**kwargs)
+    
+    for doc in docs:
+        # will modify doc object
+        eep.__call__(doc)
+    
+    nvcts = [d._.nounverbcounts for d in docs]
+    return nvcts
+    
+    
+    
+    
+    
+    
 class ExtractEntVerbsPipeline():
     name = 'entverbs'
     def __init__(self,):
@@ -92,76 +118,13 @@ class ExtractEntVerbsPipeline():
         
         return doc
     
+def extract_nounverbs(docs, **kwargs):
+    eep = ExtractEntVerbsPipeline(**kwargs)
     
-
-def get_entverbs(docs, use_ent_types=None):
-    entobj = get_ent_obj(docs, use_ent_types)
-    
-    docents = list()
-    for ents in entobj:
-        nounverbs = list()
-        for ename,eobj in ents:
-            nv = get_nounverb(eobj)
-            if nv is not None:
-                nounverbs.append((nv[0].text, nv[1].text))
-        
-        docents.append(dict(Counter(nounverbs)))
-    
-    totcts = count_totals(docents)
-    #docentcts = [dict(Counter(ents)) for ents in docents]
-    
-    return docents, totcts
-
-
-def get_prepositions(docs):
-    '''
-        Extracts prepositional phrases from list of Spacy doc objects.
-        Inputs:
-            docs: list of Spacy document objects.
-        Output:
-            list of prepositional phrases as strings for each document and counts
-    '''
-    allphrases = list()
     for doc in docs:
-        phrases = list()
-        for token in doc:
-            if token.pos_ == 'ADP':
-                pp = ''.join([tok.text + tok.whitespace_ for tok in token.subtree])
-                phrases.append(pp)
-                print(pp)
-        allphrases.append(phrases)
+        # will modify doc object
+        eep.__call__(doc)
     
-    ctphrases = [dict(Counter(ph)) for ph in allphrases]
-    totcts = count_totals(ctphrases)
-    
-    return ctphrases, totcts
-
-
-
-
-
-
-
-
-
-def get_entverbs(docs, use_ent_types=None):
-    entobj = get_ent_obj(docs, use_ent_types)
-    
-    docents = list()
-    for ents in entobj:
-        nounverbs = list()
-        for ename,eobj in ents:
-            nv = get_nounverb(eobj)
-            if nv is not None:
-                nounverbs.append((nv[0].text, nv[1].text))
-        
-        docents.append(dict(Counter(nounverbs)))
-    
-    totcts = count_totals(docents)
-    #docentcts = [dict(Counter(ents)) for ents in docents]
-    
-    return docents, totcts
-    
-
-
+    evcts = [d._.entverbcts for d in docs]
+    return evcts
 

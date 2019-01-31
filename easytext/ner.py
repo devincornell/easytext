@@ -59,66 +59,19 @@ class ExtractEntsPipeline():
         return doc
 
 
-
-def get_ent_obj(docs, use_ent_types=None):
-    '''
-        Extracts entity names and objects, combining names that are same after removing punctuation and
-            capitalization.
-        Inputs:
-            docs: list of Spacy document objects.
-        Output:
-            - list of entities as strings for each document and counts
-            - total counts across all documents
-    '''
-    
-    allents = list()
-    entmap = dict() # basetext -> list(entnames)
+def extract_entities(docs, **kwargs):
+    eep = ExtractEntsPipeline(**kwargs)
+    entmap = None
     for doc in docs:
+        # will modify doc object
+        eep.__call__(doc)
         
-        spans = list(doc.ents)
-        for span in spans:
-            span.merge()
-        
-        if use_ent_types is None:
-            ents = [e for e in doc if e.ent_type > 0]
-        else:
-            ents = [e for e in doc if e.ent_type > 0 and e.ent_id_ in use_ent_types]
-        
-        for i in range(len(ents)):
-            basetext = get_basetext(ents[i].text)
-            
-            if basetext not in entmap.keys():
-                entmap[basetext] = [ents[i].text,]
-            
-            elif ents[i].text not in entmap[basetext]:
-                entmap[basetext].append(ents[i].text)
-                
-            ents[i] = (entmap[basetext][0],ents[i])
-                       
-        allents.append(ents)
-                       
-    return allents
-
-
-def get_ents(docs, use_ent_types=None):
-    '''
-        Extracts entity names, combining names that are same after removing punctuation and
-            capitalization.
-        Inputs:
-            docs: list of Spacy document objects.
-        Output:
-            - list of prepositional phrases as strings for each document and counts
-            - total counts across all documents
-    '''
+        # we want the entmap from the last doc
+        entmap = doc._.entmap
     
-    docentobj = get_ent_obj(docs, use_ent_types)
+    #entlists = [d._.entlist for d in docs]
+    #entmaps = [d._.entmap for d in docs]
+    entcts = [d._.entcts for d in docs]
+    return entcts, entmap
     
-    #combine doc entity totals
-    entcts = list()
-    for ents in docentobj:
-        entct = dict(Counter([n for n,e in ents]))
-        entcts.append(entct)
     
-    totals = count_totals(entcts)
-        
-    return entcts, totals
