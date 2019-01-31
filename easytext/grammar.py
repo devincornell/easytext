@@ -24,9 +24,9 @@ def get_nounverb(noun):
         return None
 
 
-class ExtractPrepositions():
+class ExtractPrepositionsPipeline():
     name = 'prepositions'
-    def __init__(self,include_ents=False):
+    def __init__(self):
         #self.phrases = list()
         Doc.set_extension('prepphrases', default=list())
         Doc.set_extension('prepphrasecounts', default=list())
@@ -44,9 +44,9 @@ class ExtractPrepositions():
         
         return doc
 
-class ExtractNounVerbs():
+class ExtractNounVerbsPipeline():
     name = 'nounverbs'
-    def __init__(self,include_ents=False):
+    def __init__(self):
         #self.phrases = list()
         Doc.set_extension('nounverbs', default=list())
         Doc.set_extension('nounverbcounts', default=list())
@@ -68,7 +68,7 @@ class ExtractNounVerbs():
         
         return doc
 
-class ExtractEntVerbs():
+class ExtractEntVerbsPipeline():
     name = 'entverbs'
     def __init__(self,):
         Doc.set_extension('entverbs', default=list())

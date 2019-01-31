@@ -3,7 +3,8 @@ from glob import glob
 import spacy
 from spacy.tokens import Doc
 
-from .grammar import get_ents
+#from .grammar import get_ents
+from .easytext import EasyTextPipeline
 from .tools import dict2df
 
 def readfile(fname):
@@ -19,7 +20,7 @@ if __name__ == '__main__':
     
     inoutfiles = [a for a in sys.argv[1:] if not a.startswith('-')]
     fullargs = [a[2:] for a in sys.argv[1:] if a.startswith('--')]
-    charargs = [a[1:] for a in sys.argv[1:] if a.startswith('-')]
+    charargs = [a[1:] for a in sys.argv[1:] if a.startswith('-') and not a.startswith('--')]
     
     
     # initial checks on arguments
@@ -68,26 +69,71 @@ if __name__ == '__main__':
     else:
         # every line is a separate text
         text = readfile(infnames)
-        texts = [(str(i),t) for i,t in enumerate(text.split('\n')) if len(t.strip()) > 0]
+        textnames = [(str(i),t) for i,t in enumerate(text.split('\n')) if len(t.strip()) > 0]
         
-        texts = [t for n,t in texts] # this looks weird bc lines should be reflected in fname
-        names = [n for n,t in texts]
+        names = [n for n,t in textnames]
+        texts = [t for n,t in textnames] # this looks weird bc lines should be reflected in fname
+        
+    
+    
+    # add easytext pipeline component to new spacy parser
+    nlp = spacy.load('en')
+    et = EasyTextPipeline()
+    nlp.add_pipe(et, last=True)
+
+    entcts = list()
+    prepcts = list()
+    nvcts = list()
+    evcts = list()
+    for name, doc in zip(names, nlp.pipe(texts)):
+        #print({k:v for k,v in doc._.__dict__.items() if k[0] != '_')
+        print(doc._.__dict__['_extensions'])
+        #print(doc._.entlist)
+        #entmap
+        #entcts
+        #entcts.append(doc._.entcts)
+        
+        #print(doc._.prepphrases)
+        #prepphrasecounts
+        #prepcts.append(doc._.prepphrasecounts)
+        
+        #print(doc._.nounverbs)
+        #nounverbcounts
+        #nvcts.append(doc._.nounverbcounts)
+        
+        #print(doc._.entverbs)
+        #entverbcts
+        #evcts.append(doc._.entverbcts)
+        
+        #print()
+        
+    entdf = dict2df(entcts, names)
+    #entdf.append(count_totals(entcts))
+    
+    prepdf = dict2df(prepcts, names)
+    nvdf = dict2df(nvcts, names)
+    evdf = dict2df(evcts, names)
+    print(entdf)
+    
+    
+    
     
     
     # load spacy with correct modules
-    usemodules = set()
-    if flags['all'] or flags['entity'] or flags['entity-verb']:
-        usemodules.add('ner')
+    #usemodules = set()
+    #if flags['all'] or flags['entity'] or flags['entity-verb']:
+    #    usemodules.add('ner')
         
-    if flags['all'] or flags['entity-verb'] or flags['preposition'] or flags['noun-verb']:
-        # enable parser/tagger
-        usemodules &= {'tagger', 'parser'}
+    #if flags['all'] or flags['entity-verb'] or flags['preposition'] or flags['noun-verb']:
+    #    # enable parser/tagger
+    #    usemodules &= {'tagger', 'parser'}
     
-    defaultmod = {'tagger', 'parser', 'ner'}
-    disablemodules = defaultmod - usemodules
-    nlp = spacy.load('en', disable=disablemodules)
+    #defaultmod = {'tagger', 'parser', 'ner'}
+    #disablemodules = defaultmod - usemodules
+    #nlp = spacy.load('en', disable=disablemodules)
     
     
+    exit()
     # parse documents for processing
     docs = nlp.pipe(texts)
     
@@ -98,9 +144,6 @@ if __name__ == '__main__':
         df = dict2df(entcts,names)
         print(df)
     
-                 
-                 
-    exit()
     
                  
     # parse text file where every line is a separate doc

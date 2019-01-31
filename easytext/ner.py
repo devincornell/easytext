@@ -10,7 +10,7 @@ def get_basetext(etext):
     return basetext
 
 
-class ExtractEnts():
+class ExtractEntsPipeline():
     name = 'entities'
     def __init__(self, use_ent_types=None):
         #self.allents = list()
