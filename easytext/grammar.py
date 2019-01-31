@@ -54,6 +54,8 @@ def extract_prepositions(docs, **kwargs):
     ppcts = [d._.prepphrasecounts for d in docs]
     return ppcts
     
+    
+    
 
 class ExtractNounVerbsPipeline():
     name = 'nounverbs'
@@ -118,7 +120,7 @@ class ExtractEntVerbsPipeline():
         
         return doc
     
-def extract_nounverbs(docs, **kwargs):
+def extract_entverbs(docs, **kwargs):
     eep = ExtractEntVerbsPipeline(**kwargs)
     
     for doc in docs:

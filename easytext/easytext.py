@@ -29,3 +29,5 @@ class EasyTextPipeline():
             doc = pc.__call__(doc)
         
         return doc
+    
+    
