@@ -2,9 +2,14 @@ import sys
 from glob import glob
 import spacy
 from spacy.tokens import Doc
+import pandas as pd
+from argparse import ArgumentParser
 
-#from .grammar import get_ents
-from .easytext import EasyTextPipeline
+#from .easytext import EasyTextPipeline # (this one does it all)
+from .ner import ExtractEntsPipeline
+from .grammar import ExtractPrepositionsPipeline, ExtractNounVerbsPipeline, ExtractEntVerbsPipeline
+
+
 from .tools import dict2df
 
 def readfile(fname):
@@ -12,10 +17,23 @@ def readfile(fname):
         text = f.read()
     return text
 
-
 if __name__ == '__main__':
     
     # example: python -m easytextanalysis --sentiment --topicmodel --prepphrases texts/* output.csv
+    parser = ArgumentParser()
+    parser.add_argument('--all', help='Run all modules.', nargs='?')
+    parser.add_argument('-a', help='Run all modules.', nargs='?')
+    
+    parser.add_argument('--entity', help='Run all modules.', nargs='?')
+    parser.add_argument('-e', help='Run all modules.', nargs='?')
+    
+    parser.add_argument('--preposition', help='Run all modules.', nargs='?')
+    parser.add_argument('-p', help='Run all modules.', nargs='?')
+    
+    args = parser.parse_args()
+    print(args)
+    exit()
+    
     
     
     inoutfiles = [a for a in sys.argv[1:] if not a.startswith('-')]
@@ -38,9 +56,9 @@ if __name__ == '__main__':
     flagstr = (
         ('a','all'),
         ('e','entity'),
-        ('v','entity-verb'),
         ('p','preposition'),
         ('n','noun-verb'),
+        ('v','entity-verb'),
         ('s','sentiment'),
         ('t','topicmodel'),
     )
@@ -74,50 +92,75 @@ if __name__ == '__main__':
         names = [n for n,t in textnames]
         texts = [t for n,t in textnames] # this looks weird bc lines should be reflected in fname
         
-    
-    
-    # add easytext pipeline component to new spacy parser
+        
+    # load correct pipeline components
     nlp = spacy.load('en')
-    et = EasyTextPipeline()
-    nlp.add_pipe(et, last=True)
+    if flags['all'] or flags['entity'] or flags['entity-verb']:
+        p = ExtractEntsPipeline()
+        nlp.add_pipe(p, last=True)
+    
+    if flags['all'] or flags['preposition']:
+        p = ExtractPrepositionsPipeline()
+        nlp.add_pipe(p, last=True)
+        
+    if flags['all'] or flags['noun-verb']:
+        p = ExtractNounVerbsPipeline()
+        nlp.add_pipe(p, last=True)
+        
+    if flags['all'] or flags['entity-verb']:
+        p = ExtractEntVerbsPipeline()
+        nlp.add_pipe(p, last=True)
+        
+    pipecomp = [n for n,p in nlp.pipeline]
 
     entcts = list()
     prepcts = list()
     nvcts = list()
     evcts = list()
     for name, doc in zip(names, nlp.pipe(texts)):
-        #print({k:v for k,v in doc._.__dict__.items() if k[0] != '_')
-        print(doc._.__dict__['_extensions'])
-        #print(doc._.entlist)
-        #entmap
-        #entcts
-        #entcts.append(doc._.entcts)
         
-        #print(doc._.prepphrases)
-        #prepphrasecounts
-        #prepcts.append(doc._.prepphrasecounts)
+        if 'entities' in pipecomp:
+            entcts.append(doc._.entcts)
         
-        #print(doc._.nounverbs)
-        #nounverbcounts
-        #nvcts.append(doc._.nounverbcounts)
+        if 'prepositions' in pipecomp:
+            prepcts.append(doc._.prepphrasecounts)
         
-        #print(doc._.entverbs)
-        #entverbcts
-        #evcts.append(doc._.entverbcts)
+        if 'nounverbs' in pipecomp:
+            nvcts.append(doc._.nounverbcounts)
         
-        #print()
+        if 'entverbs' in pipecomp:
+            evcts.append(doc._.entverbcts)
         
-    entdf = dict2df(entcts, names)
-    #entdf.append(count_totals(entcts))
+    # attach spreadsheet components
+    xlswriter = pd.ExcelWriter(outfname)
     
-    prepdf = dict2df(prepcts, names)
-    nvdf = dict2df(nvcts, names)
-    evdf = dict2df(evcts, names)
-    print(entdf)
-    
-    
-    
-    
+    if len(entcts) > 0:
+        entdf = dict2df(entcts, names)
+        entdf.to_excel(xlswriter, sheet_name='Entities')
+        
+    if len(prepcts) > 0:
+        prepdf = dict2df(prepcts, names)
+        prepdf.to_excel(xlswriter, sheet_name='Prepositions')
+        
+    if len(nvcts) > 0:
+        nvdf = dict2df(nvcts, names)
+        vals = pd.Series(nvdf.index.get_level_values('value'))
+        nvdf['nouns'] = list(vals.apply(lambda x: x[0]))
+        nvdf['verbs'] = list(vals.apply(lambda x: x[1]))
+        nvdf = nvdf[['nouns','verbs','count']]
+        nvdf.index = nvdf.index.droplevel('value')
+        nvdf.to_excel(xlswriter, sheet_name='NounVerbs')
+        
+    if len(evcts) > 0:
+        evdf = dict2df(evcts, names)
+        vals = pd.Series(evdf.index.get_level_values('value'))
+        evdf['entities'] = list(vals.apply(lambda x: x[0]))
+        evdf['verbs'] = list(vals.apply(lambda x: x[1]))
+        evdf = evdf[['entities','verbs','count']]
+        evdf.index = evdf.index.droplevel('value')
+        evdf.to_excel(xlswriter, sheet_name='EntityVerbs')
+        
+    xlswriter.save()
     
     # load spacy with correct modules
     #usemodules = set()
