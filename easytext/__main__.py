@@ -21,14 +21,26 @@ if __name__ == '__main__':
     
     # example: python -m easytextanalysis --sentiment --topicmodel --prepphrases texts/* output.csv
     parser = ArgumentParser()
-    parser.add_argument('--all', help='Run all modules.', nargs='?')
-    parser.add_argument('-a', help='Run all modules.', nargs='?')
     
-    parser.add_argument('--entity', help='Run all modules.', nargs='?')
-    parser.add_argument('-e', help='Run all modules.', nargs='?')
+    h = 'Run all modules.'
+    parser.add_argument('--all', help=h, action='store_true')
+    #parser.add_argument('-a', help=h, action='store_true')
     
-    parser.add_argument('--preposition', help='Run all modules.', nargs='?')
-    parser.add_argument('-p', help='Run all modules.', nargs='?')
+    h = 'Run NER.'
+    parser.add_argument('--entity', help=h, action='store_true')
+    #parser.add_argument('-e', help=h, action='store_true')
+    
+    h = 'Run prepositional phrase extractor.'
+    parser.add_argument('--preposition', help=h, action='store_true')
+    #parser.add_argument('-p', help=h, action='store_true')
+    
+    h = 'Run noun-verb extractor.'
+    parser.add_argument('--noun-verb', help=h, nargs='?')
+    #parser.add_argument('-n', help=h, action='store_true')
+    
+    h = 'Run entity-verb extractor.'
+    parser.add_argument('--entity-verb', help=h, action='store_true')
+    #parser.add_argument('-v', help=h, action='store_true')
     
     args = parser.parse_args()
     print(args)
