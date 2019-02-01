@@ -21,105 +21,48 @@ if __name__ == '__main__':
     
     # example: python -m easytextanalysis --sentiment --topicmodel --prepphrases texts/* output.csv
     parser = ArgumentParser()
-    
     h = 'Run all modules.'
-    parser.add_argument('--all', help=h, action='store_true')
-    #parser.add_argument('-a', help=h, action='store_true')
-    
+    parser.add_argument('-a','--all', help=h, action='store_true')
     h = 'Run NER.'
-    parser.add_argument('--entity', help=h, action='store_true')
-    #parser.add_argument('-e', help=h, action='store_true')
-    
+    parser.add_argument('-e','--entity', help=h, action='store_true')
     h = 'Run prepositional phrase extractor.'
-    parser.add_argument('--preposition', help=h, action='store_true')
-    #parser.add_argument('-p', help=h, action='store_true')
-    
+    parser.add_argument('-p','--preposition', help=h, action='store_true')
     h = 'Run noun-verb extractor.'
-    parser.add_argument('--noun-verb', help=h, nargs='?')
-    #parser.add_argument('-n', help=h, action='store_true')
-    
+    parser.add_argument('-n','--noun-verb', help=h, action='store_true')
     h = 'Run entity-verb extractor.'
-    parser.add_argument('--entity-verb', help=h, action='store_true')
-    #parser.add_argument('-v', help=h, action='store_true')
-    
+    parser.add_argument('-v','--entity-verb', help=h, action='store_true')
+    h = 'Input files.'
+    parser.add_argument('infiles', nargs='+', help=h)
+    h = 'Output file.'
+    parser.add_argument('outfile', help=h)
     args = parser.parse_args()
-    print(args)
-    exit()
     
-    
-    
-    inoutfiles = [a for a in sys.argv[1:] if not a.startswith('-')]
-    fullargs = [a[2:] for a in sys.argv[1:] if a.startswith('--')]
-    charargs = [a[1:] for a in sys.argv[1:] if a.startswith('-') and not a.startswith('--')]
-    
-    
-    # initial checks on arguments
-    if len(inoutfiles) != 2:
-        raise Exception('Command must include input and output file arguments.')
-    
-    if any([len(ca) > 1 for ca in charargs]):
-        raise Exception('Character args start with a single "-" and full args start with "--".')
-        
-    if len(fullargs) + len(charargs) == 0:
-        raise Exception('No actions were specified via arguments. Use --all flag to run all actions.')
-    
-    # define available options/flags
-    infnames, outfname = inoutfiles
-    flagstr = (
-        ('a','all'),
-        ('e','entity'),
-        ('p','preposition'),
-        ('n','noun-verb'),
-        ('v','entity-verb'),
-        ('s','sentiment'),
-        ('t','topicmodel'),
-    )
-    
-    # make sure all arguments are recognized
-    allchr, allfull = [c for c,f in flagstr], [f for c,f in flagstr]
-    for ca in charargs:
-        if ca not in allchr:
-            raise Exception('Character argument "', ca, '" not recognized.')
-    for fa in fullargs:
-        if fa not in allfull:
-            raise Exception('Full argument "', fa, '" not recognized.')
-    
-    # combine flags into a dictionary
-    flags = {f: c in charargs or f in fullargs for c,f in flagstr}
-    print('Selected Flags:', flags)
-        
-    # load in text data
-    if '*' in infnames:
-        fnames = glob(infnames, recursive=True)
-        if not len(fnames):
-            raise Exception('Provided input pattern didn\'t match any filenames.')
-        
-        texts = (readfile(fn) for fn in fnames)
+    # read text files
+    if len(args.infiles) > 1:
+        texts = (readfile(fn) for fn in args.infiles)
         names = fnames
     else:
-        # every line is a separate text
-        text = readfile(infnames)
-        textnames = [(str(i),t) for i,t in enumerate(text.split('\n')) if len(t.strip()) > 0]
-        
-        names = [n for n,t in textnames]
-        texts = [t for n,t in textnames] # this looks weird bc lines should be reflected in fname
+        text = readfile(args.infiles[0])
+        textnames = [(i,t) for i,t in enumerate(text.split('\n')) if len(t) > 0]
+        names = [str(i) for i,t in textnames]
+        texts = [t for i,t in textnames]
         
         
     # load correct pipeline components
     nlp = spacy.load('en')
-    if flags['all'] or flags['entity'] or flags['entity-verb']:
+    if args.all or args.entity or args.entity_verb:
         p = ExtractEntsPipeline()
         nlp.add_pipe(p, last=True)
     
-    if flags['all'] or flags['preposition']:
+    if args.all or args.preposition:
         p = ExtractPrepositionsPipeline()
         nlp.add_pipe(p, last=True)
         
-    if flags['all'] or flags['noun-verb']:
+    if args.all or args.noun_verb:
         p = ExtractNounVerbsPipeline()
         nlp.add_pipe(p, last=True)
         
-    if flags['all'] or flags['entity-verb']:
+    if args.all or args.entity_verb:
         p = ExtractEntVerbsPipeline()
         nlp.add_pipe(p, last=True)
         
