@@ -13,9 +13,10 @@ from .grammar import ExtractPrepositionsPipeline, ExtractNounVerbsPipeline, Extr
 from .tools import dict2df
 
 def readfile(fname):
-    with open(fname, 'r') as f:
-        text = f.read()
+    with open(fname, 'rb') as f:
+        text = f.read().decode('ascii',errors='ignore')
     return text
+
 
 if __name__ == '__main__':
     
@@ -39,8 +40,9 @@ if __name__ == '__main__':
     
     # read text files
     if len(args.infiles) > 1:
+        #args.infiles = args.infiles[:2]
         texts = (readfile(fn) for fn in args.infiles)
-        names = fnames
+        names = args.infiles
     else:
         text = readfile(args.infiles[0])
         textnames = [(i,t) for i,t in enumerate(text.split('\n')) if len(t) > 0]
@@ -86,19 +88,20 @@ if __name__ == '__main__':
         if 'entverbs' in pipecomp:
             evcts.append(doc._.entverbcts)
         
+        
     # attach spreadsheet components
-    xlswriter = pd.ExcelWriter(outfname)
+    xlswriter = pd.ExcelWriter(args.outfile, engine='xlsxwriter')
     
     if len(entcts) > 0:
-        entdf = dict2df(entcts, names)
+        entdf = dict2df(entcts, names)#.applymap(escape)
         entdf.to_excel(xlswriter, sheet_name='Entities')
         
     if len(prepcts) > 0:
-        prepdf = dict2df(prepcts, names)
+        prepdf = dict2df(prepcts, names)#.applymap(escape)
         prepdf.to_excel(xlswriter, sheet_name='Prepositions')
         
     if len(nvcts) > 0:
-        nvdf = dict2df(nvcts, names)
+        nvdf = dict2df(nvcts, names)#.applymap(escape)
         vals = pd.Series(nvdf.index.get_level_values('value'))
         nvdf['nouns'] = list(vals.apply(lambda x: x[0]))
         nvdf['verbs'] = list(vals.apply(lambda x: x[1]))
@@ -107,7 +110,7 @@ if __name__ == '__main__':
         nvdf.to_excel(xlswriter, sheet_name='NounVerbs')
         
     if len(evcts) > 0:
-        evdf = dict2df(evcts, names)
+        evdf = dict2df(evcts, names)#.applymap(escape)
         vals = pd.Series(evdf.index.get_level_values('value'))
         evdf['entities'] = list(vals.apply(lambda x: x[0]))
         evdf['verbs'] = list(vals.apply(lambda x: x[1]))
@@ -117,51 +120,5 @@ if __name__ == '__main__':
         
     xlswriter.save()
     
-    # load spacy with correct modules
-    #usemodules = set()
-    #if flags['all'] or flags['entity'] or flags['entity-verb']:
-    #    usemodules.add('ner')
-        
-    #if flags['all'] or flags['entity-verb'] or flags['preposition'] or flags['noun-verb']:
-    #    # enable parser/tagger
-    #    usemodules &= {'tagger', 'parser'}
-    
-    #defaultmod = {'tagger', 'parser', 'ner'}
-    #disablemodules = defaultmod - usemodules
-    #nlp = spacy.load('en', disable=disablemodules)
-    
-    
-    exit()
-    # parse documents for processing
-    docs = nlp.pipe(texts)
-    
-        
-    # apply selected stages
-    if flags['all'] or flags['entity']:
-        entcts, totcts = get_ents(docs)
-        df = dict2df(entcts,names)
-        print(df)
-    
-    
-                 
-    # parse text file where every line is a separate doc
-    allscores = list()
-    for n,doc in texts:
-        if doc:
-            score = dic.score(doc)
-            print('text on line', n+1, 'counts (', sum(score.values()), 'moral words):')
-            for cat in dic.allcats:
-                print('    ' + cat+':', score[cat])
-            
-            allscores.append(score)
-    
-    nlp.pipe(texts)
-    
-    score = addscores(allscores)
-    print('total counts (', sum(score.values()), 'moral words total):')
-    for cat in dic.allcats:
-        print('    ' + cat+':', score[cat])
-        
-        
         
         
