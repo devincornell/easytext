@@ -24,7 +24,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     h = 'Run all modules.'
     parser.add_argument('-a','--all', help=h, action='store_true')
-    h = 'Run NER.'
+    h = 'Run Named Entity Recognition (NER).'
     parser.add_argument('-e','--entity', help=h, action='store_true')
     h = 'Run prepositional phrase extractor.'
     parser.add_argument('-p','--preposition', help=h, action='store_true')

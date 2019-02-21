@@ -38,3 +38,7 @@ if __name__ == '__main__':
     print(ev)
     print()
     
+    print(docs)
+    
+    
+    

@@ -14,10 +14,11 @@ ALL_COMPONENTS = {
     'nounverbs':ExtractNounVerbsPipeline, 
     'entverbs':ExtractEntVerbsPipeline, 
 }
-PIPENAME_PREFIX = 'easytext-'
+#PIPENAME_PREFIX = 'easytext-'
 
 class EasyTextPipeline():
-    def __init__(self, nlp, enable=None, disable=None, use_ent_types=None):
+    name = 'easytext'
+    def __init__(self, nlp, enable=None, disable=None, **kwargs):
         if enable is not None:
             usepipe = set(enable)
         elif disable is not None:
@@ -30,7 +31,7 @@ class EasyTextPipeline():
         for pn in usepipe:
             if pn not in ALL_COMPONENTS.keys():
                 raise Exception('invalid pipe name provided:', pn)
-            self.components[pn] = ALL_COMPONENTS[pn](nlp)
+            self.components[pn] = ALL_COMPONENTS[pn](nlp, **kwargs)
     
     def __call__(self, doc):
         for pnname,pcomp in self.components.items():
@@ -38,30 +39,14 @@ class EasyTextPipeline():
         
         return doc
 
-
-def enable_components(nlp,enable=None):
-    if enable is None:
-        enable = list(ALL_COMPONENTS.keys())
-    print(nlp.pipe_names)
-    for compname in enable:
-        if not PIPENAME_PREFIX+compname in nlp.pipe_names:
-            component = ALL_COMPONENTS[compname]
-            nlp.add_pipe(component,name=PIPENAME_PREFIX+compname)
-
-def disable_components(nlp,disable=None):
-    if disable is None:
-        disable = list(ALL_COMPONENTS.keys())
-    
-    for compname in disable:
-        if PIPENAME_PREFIX+compname in nlp.pipe_names:
-            nlp.remove_pipe(PIPENAME_PREFIX+compname)
-    
-
 def parse(nlp,texts,enable=None,**kwargs):
     '''
         Runs spacy parser loop only extracting data from enabled custom modules.
     '''
-    enable_components(nlp,enable)
+    #enable_components(nlp,enable)
+    if not 'easytext' in nlp.pipe_names:
+        component = EasyTextPipeline(nlp,enable,**kwargs)
+        nlp.add_pipe(component,name='easytext')
         
     # extracts only easytext data from docs as generator
     for doc in nlp.pipe(texts, **kwargs):
