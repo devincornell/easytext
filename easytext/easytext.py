@@ -1,33 +1,71 @@
 
-from .ner import ExtractEntsPipeline
-from .grammar import ExtractPrepositionsPipeline, ExtractNounVerbsPipeline, ExtractEntVerbsPipeline
+#from .ner import ExtractEntsPipeline
+#from .grammar import ExtractPrepositionsPipeline, ExtractNounVerbsPipeline, ExtractEntVerbsPipeline
+from .pipelines import *
+
+#ALL_OPTIONS = ['ents','prepositions','nounverbs','entverbs']
+
+
+# list of all pipeline components
+ALL_COMPONENTS = {
+    'wordlist':ExtractWordListPipeline,
+    'prepositions':ExtractPrepositionsPipeline, 
+    'entlist':ExtractEntListPipeline, 
+    'nounverbs':ExtractNounVerbsPipeline, 
+    'entverbs':ExtractEntVerbsPipeline, 
+}
+PIPENAME_PREFIX = 'easytext-'
 
 class EasyTextPipeline():
-    def __init__(self, enable=None, disable=None, use_ent_types=None):
-        usepipe = {'ents', 'prepositions', 'nounverbs', 'entverbs'}
+    def __init__(self, nlp, enable=None, disable=None, use_ent_types=None):
         if enable is not None:
             usepipe = set(enable)
-        
         elif disable is not None:
             usepipe -= set(disable)
-            
-        self.pipe_components = list()
-        if 'ents' in usepipe:
-            self.pipe_components.append(ExtractEntsPipeline(use_ent_types))
-            
-        if 'prepositions' in usepipe:
-            self.pipe_components.append(ExtractPrepositionsPipeline())
-            
-        if 'nounverbs' in usepipe:
-            self.pipe_components.append(ExtractNounVerbsPipeline())
-            
-        if 'entverbs' in usepipe:
-            self.pipe_components.append(ExtractEntVerbsPipeline())
+        else:
+            usepipe = set(ALL_COMPONENTS.keys())
         
-    def __call__(self,doc):
-        for pc in self.pipe_components:
-            doc = pc.__call__(doc)
+        # ensure correct pipe names
+        self.components = dict()
+        for pn in usepipe:
+            if pn not in ALL_COMPONENTS.keys():
+                raise Exception('invalid pipe name provided:', pn)
+            self.components[pn] = ALL_COMPONENTS[pn](nlp)
+    
+    def __call__(self, doc):
+        for pnname,pcomp in self.components.items():
+            pcomp.__call__(doc)
         
         return doc
+
+
+def enable_components(nlp,enable=None):
+    if enable is None:
+        enable = list(ALL_COMPONENTS.keys())
+    print(nlp.pipe_names)
+    for compname in enable:
+        if not PIPENAME_PREFIX+compname in nlp.pipe_names:
+            component = ALL_COMPONENTS[compname]
+            nlp.add_pipe(component,name=PIPENAME_PREFIX+compname)
+
+def disable_components(nlp,disable=None):
+    if disable is None:
+        disable = list(ALL_COMPONENTS.keys())
+    
+    for compname in disable:
+        if PIPENAME_PREFIX+compname in nlp.pipe_names:
+            nlp.remove_pipe(PIPENAME_PREFIX+compname)
+    
+
+def parse(nlp,texts,enable=None,**kwargs):
+    '''
+        Runs spacy parser loop only extracting data from enabled custom modules.
+    '''
+    enable_components(nlp,enable)
+        
+    # extracts only easytext data from docs as generator
+    for doc in nlp.pipe(texts, **kwargs):
+        yield doc._.easytext
+
     
     
