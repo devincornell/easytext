@@ -69,7 +69,7 @@ class DocModel:
         return topfeat[:topn]
     
     
-    # ________ Create Summary Spreadsheets _________
+    # ________ Create Summary DataFrames _________
     def feature_words_summary(self,topn=None):
         ''' Shows words most closely associated with each feature. '''
         
@@ -91,20 +91,34 @@ class DocModel:
         if topn is None:
             topn = self.Nfeat
         
-        df = pd.DataFrame(index=self.docnames, columns=range(topn))
+        useNfeat = min(topn, self.Nfeat)
+        df = pd.DataFrame(index=self.docnames, columns=range(useNfeat))
         df.index.name = 'document'
         df.columns.name = 'nth top feature'
         for doc in self.docnames:
-            topfeat = self.get_doc_features(doc, topn)
+            topfeat = self.get_doc_features(doc, useNfeat)
             df.loc[doc,:] = list(topfeat.index)
         
         return df
         
         
-    def add_report(self, writer):
+    def write_report(self, fname, topn=None, sheetnames=None):
+        '''
+            Will write excel sheet file with sheets corresponding to summary/models.
+        '''
+        if sheetnames is None:
+            sheetnames = ('docfeatures','featurewords','docsummary','featuresummary')
+        else:
+            assert(len(sheetnames) == 4)
         
-        writer = ExcelWriter(outfile)
-        self.topics.to_excel(writer,'topics')
-        self.docs.to_excel(writer,'docs')
+        df_docsummary = self.doc_feature_summary(topn)
+        df_featsummary = self.feature_words_summary(topn)
+        
+        # write to file self.Nfeat
+        writer = pd.ExcelWriter(fname)
+        self.doc_features.to_excel(writer,sheetnames[0])
+        self.feature_words.to_excel(writer, sheetnames[1])
+        df_docsummary.to_excel(writer, sheetnames[2])
+        df_featsummary.to_excel(writer, sheetnames[3])
 
         writer.save()

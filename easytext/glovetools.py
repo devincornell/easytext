@@ -3,19 +3,77 @@ from glove.glove_cython import fit_vectors, transform_paragraph
 import collections
 import numpy as np
 
-#print(glove.transform_paragraph(test))
-#def glove_transform_paragraph(gm, )
-
 def glove_vector(gm,word):
     ind = gm.dictionary[word]
     return gm.word_vectors[ind]
 
+def glove_vectors(gm,words):
+    return np.sum([glove_vector(gm,w) for w in words],axis=0)
+
 def glove_projection(gm, tword, pvec):
     tvec = glove_vector(gm,tword)
-    print(pvec.shape)
     prod = pvec.dot(tvec)/(np.linalg.norm(tvec) * np.linalg.norm(pvec))
     return prod
 
+def glove_rejection(x,v):
+    '''
+        Return part of x that is orthogonal to v.
+    '''
+    nx = np.linalg.norm(x)
+    nv = np.linalg.norm(v)
+    
+    return x - x.dot(v)/(nx*nv)*v
+
+
+def supervised_vectors(gm, keywords=list()):
+    '''
+        Performs a hyper-rotation of the vector space according to 
+        pre-defined topical words. Can work like a kind of supervised topic modeling.
+    '''
+    n_dim = gm.word_vectors[0].shape[0]
+    assert(len(keywords) <= n_dim and len(keywords) > 0)
+    assert(all([w in gm.dictionary.keys() for kw in keywords for w in kw]))
+    
+    # form basis axes for each 
+    newbasis = list()
+    for kw in keywords:
+        v = glove_vectors(gm, kw)
+        
+        # create as orthogonal to all other keywords
+        for bv in newbasis:
+            v = glove_rejection(v,bv)
+        
+        # add as basis unit vector
+        newbasis.append(v/np.linalg.norm(v))
+    
+    # Now create random new vectors which are orthogonal to 
+    #   each other and the previous basis.
+    for j in range(len(keywords),n_dim):
+        v = np.random.rand(n_dim)
+        
+        # make orthogonal to previous basis vectors
+        for bv in newbasis:
+            v = glove_rejection(v,bv)
+        
+        # add as basis unit vector
+        newbasis.append(v/np.linalg.norm(v))
+    
+    # B is now linear transformation from old basis to new one
+    B = np.vstack(newbasis)
+    
+    # now modify glove vectors to match transformed basis
+    for i in range(len(gm.dictionary)):
+        gm.word_vectors[i] = B.dot(gm.word_vectors[i])
+    
+    return gm
+    
+    
+
+
+
+
+# VVVVVVVVVVVVVVVVVV These were taken with minor corrections from the glove library. VVVVVVVVVVVVVVVVVV
+# see original file: https://github.com/maciejkula/glove-python/blob/master/glove/glove.py
 
 def check_random_state(seed):
     """ Turn seed into a np.random.RandomState instance.
@@ -30,7 +88,6 @@ def check_random_state(seed):
         return seed
     raise ValueError('%r cannot be used to seed a numpy.random.RandomState'
                      ' instance' % seed)
-
 
 
 def glove_transform_paragraph(gm, paragraph, epochs=50, ignore_missing=False):

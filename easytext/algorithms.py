@@ -4,12 +4,12 @@ import numpy as np
 from collections import Counter
 from glove import Glove, Corpus
 
-from .glovetools import glove_transform_paragraph, glove_projection
+from .glovetools import glove_transform_paragraph, glove_projection, supervised_vectors
 from .docmodel import DocModel
 
-def lda(docbows, n_topics, random_state=0, learning_method='online', docnames=None, **kwargs):
+def lda(docbows, n_topics, random_state=0, min_tf=2, learning_method='online', docnames=None, **kwargs):
 
-    vectorizer = CountVectorizer(tokenizer = lambda x: x, preprocessor=lambda x:x)
+    vectorizer = CountVectorizer(tokenizer = lambda x: x, preprocessor=lambda x:x,min_df=min_tf)
     corpus = vectorizer.fit_transform(docbows)
     vocab = vectorizer.get_feature_names()
     
@@ -29,15 +29,15 @@ def lda(docbows, n_topics, random_state=0, learning_method='online', docnames=No
     
     return DocModel(doctopics, topics, vocab, docnames=docnames)
     
-def nmf(docbows, n_topics, random_state=0, docnames=None, **kwargs):
+def nmf(docbows, n_topics, random_state=0, min_tf=2, docnames=None, **kwargs):
     
-    vectorizer = TfidfVectorizer(tokenizer = lambda x: x, preprocessor=lambda x:x)
+    vectorizer = TfidfVectorizer(tokenizer = lambda x: x, preprocessor=lambda x:x,min_df=min_tf)
     corpus = vectorizer.fit_transform(docbows)
     vocab = vectorizer.get_feature_names()
     
     nmf_model = NMF(
         n_components=n_topics, 
-        random_state=random_state, 
+        random_state=random_state,
         **kwargs,
        ).fit(corpus)
     
@@ -60,9 +60,10 @@ def pretenddocs(docsents):
     '''
     for doc in docsents:
         yield [w for sent in doc for w in sent]
-    
-    
-def glove(docsents, n_dim, random_state=0, min_tf=0, docnames=None, **kwargs):
+
+
+
+def glove(docsents, n_dim, random_state=0, min_tf=1, docnames=None, keywords=None, **kwargs):
     
     # count frequencies
     fdist = Counter([w for s in pretendsents(docsents) for w in s])
@@ -86,6 +87,10 @@ def glove(docsents, n_dim, random_state=0, min_tf=0, docnames=None, **kwargs):
     cutoff_dictionary = {wf[0]:i for i,wf in enumerate(sfdist) if wf[1]>min_tf}
     glove.add_dictionary(cutoff_dictionary)
     vocab = [w for w,f in sfdist if f > min_tf]
+    
+    # if keywords provided, transform vector space to new basis based on keywords
+    if keywords is not None:
+        glove = supervised_vectors(glove, keywords)
     
     # transform documents to single vectors
     transpar = lambda doc: glove_transform_paragraph(glove, doc,ignore_missing=True)

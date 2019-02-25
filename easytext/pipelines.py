@@ -3,6 +3,10 @@ from spacy.tokens import Doc
 import string
 from collections import Counter
 
+
+    
+# ________________________ Pipeline Component Definitions __________________________
+
 class ExtractWordListPipeline():
     #name = 'easytext-wordlist'
     def __init__(self,nlp):
@@ -15,6 +19,21 @@ class ExtractWordListPipeline():
         wordlist = [t.lower_ for t in doc if usetok(t)]
         
         doc._.easytext['wordlist'] = wordlist
+        
+        return doc
+    
+class ExtractSentListPipeline():
+    #name = 'easytext-wordlist'
+    def __init__(self,nlp):
+        if not Doc.has_extension('easytext'):
+            Doc.set_extension('easytext', default=dict())
+        
+    def __call__(self, doc):
+        
+        usetok = lambda t: t.is_alpha or (t.text[0] == "'" and t.text[1:].isalpha())
+        sentlist = [[t.lower_ for t in s if usetok(t)] for s in doc.sents]
+        
+        doc._.easytext['sentlist'] = sentlist
         
         return doc
 
