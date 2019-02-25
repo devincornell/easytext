@@ -4,7 +4,7 @@ from .grammar import *
 from .ner import *
 from .tools import *
 from .easytext import *
-from .topicmodel import *
+from .algorithms import *
 
 
 
