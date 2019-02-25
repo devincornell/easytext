@@ -8,11 +8,11 @@ from .pipelines import *
 
 # list of all pipeline components
 ALL_COMPONENTS = {
-    'wordlist':ExtractWordListPipeline,
-    'prepositions':ExtractPrepositionsPipeline, 
-    'entlist':ExtractEntListPipeline, 
-    'nounverbs':ExtractNounVerbsPipeline, 
-    'entverbs':ExtractEntVerbsPipeline, 
+    'wordlist':{'comp':ExtractWordListPipeline,'dep':['entlist',]},
+    'prepositions':{'comp':ExtractPrepositionsPipeline,'dep':[]},
+    'entlist':{'comp':ExtractEntListPipeline, 'dep':[]},
+    'nounverbs':{'comp':ExtractNounVerbsPipeline, 'dep':[]},
+    'entverbs':{'comp':ExtractEntVerbsPipeline, 'dep':[]},
 }
 #PIPENAME_PREFIX = 'easytext-'
 
@@ -43,14 +43,16 @@ def parse(nlp,texts,enable=None,**kwargs):
     '''
         Runs spacy parser loop only extracting data from enabled custom modules.
     '''
-    #enable_components(nlp,enable)
+    # enable spacy pipelines
     if not 'easytext' in nlp.pipe_names:
-        component = EasyTextPipeline(nlp,enable,**kwargs)
+        comps = [en for en in enable if en in ALL_COMPONENTS.keys()]
+        component = EasyTextPipeline(nlp,comps,**kwargs)
         nlp.add_pipe(component,name='easytext')
         
     # extracts only easytext data from docs as generator
     for doc in nlp.pipe(texts, **kwargs):
-        yield doc._.easytext
+        dat = doc._.easytext
+        yield 
 
     
     

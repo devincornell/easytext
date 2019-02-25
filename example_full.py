@@ -12,8 +12,7 @@ if __name__ == '__main__':
     names = list(range(len(texts)))
     print(len(texts), 'texts found.')
     
-    
-    # add pipeline component directly
+    # add pipeline component and parse with spacy directly
     nlp = spacy.load('en',)
     nlp.add_pipe(et.EasyTextPipeline(nlp))
     print('pipeline components:', nlp.pipe_names)

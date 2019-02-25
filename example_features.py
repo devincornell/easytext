@@ -18,11 +18,16 @@ def getdocs():
 if __name__ == '__main__':
     
     bows = getdocs()
-    
-    tm = et.nmf(bows,10)
+    N = 8
+    docsents = [bows[n:n+N] for n in range(0, len(bows),N)]
+    print(docsents[0])
+    tm = et.glove(docsents,10)
     
     #print('get_feature_docs')
     #print(tm.get_feature_docs(0,topn=5))
+    #subList = [theList[n:n+N] for n in range(0, len(theList), N)]
+    #print(docsen)
+    
     
     print('get words closest to each feature')
     print(tm.feature_words_summary(topn=5))
