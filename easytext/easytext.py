@@ -43,7 +43,7 @@ ALL_COMPONENTS = {
     'prepositions':{'comp':ExtractPrepositionsPipeline,'dep':[]},
     'entlist':{'comp':ExtractEntListPipeline, 'dep':[]},
     'nounverbs':{'comp':ExtractNounVerbsPipeline, 'dep':[]},
-    'entverbs':{'comp':ExtractEntVerbsPipeline, 'dep':[]},
+    'entverbs':{'comp':ExtractEntVerbsPipeline, 'dep':['entlist',]},
 }
 
 
@@ -59,14 +59,21 @@ class EasyTextPipeline():
             usepipe = set(ALL_COMPONENTS.keys())
         
         # ensure correct pipe names
-        self.components = dict()
+        self.components = list()
         for pn in usepipe:
             if pn not in ALL_COMPONENTS.keys():
                 raise Exception('invalid pipe name provided:', pn)
-            self.components[pn] = ALL_COMPONENTS[pn]['comp'](nlp, **kwargs)
+            
+            # add any dependencies before the listed component
+            for dep in ALL_COMPONENTS[pn]['dep']:
+                if not dep in [cname for cname,comp in self.components]:
+                    self.components.append((dep, ALL_COMPONENTS[dep]['comp'](nlp)))
+                
+            # add component itself
+            self.components.append((pn, ALL_COMPONENTS[pn]['comp'](nlp, **kwargs)))
     
     def __call__(self, doc):
-        for pnname,pcomp in self.components.items():
+        for pnname,pcomp in self.components:
             pcomp.__call__(doc)
         
         return doc

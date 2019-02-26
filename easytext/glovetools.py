@@ -2,6 +2,8 @@
 from glove.glove_cython import fit_vectors, transform_paragraph
 import collections
 import numpy as np
+import numbers
+
 
 def glove_vector(gm,word):
     ind = gm.dictionary[word]

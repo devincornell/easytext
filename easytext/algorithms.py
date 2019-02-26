@@ -80,7 +80,7 @@ def glove(docsents, n_dim, random_state=0, min_tf=1, docnames=None, keywords=Non
     corpus.matrix = corpus.matrix.tocsr()[:cutoff,:cutoff].tocoo()
     
     # train glove model
-    glove = Glove(no_components=n_dim, learning_rate=0.05)
+    glove = Glove(no_components=n_dim, learning_rate=0.05, random_state=random_state)
     glove.fit(corpus.matrix, **kwargs)
     
     # modify dictionary after cutoff applied
