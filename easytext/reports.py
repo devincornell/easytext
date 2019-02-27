@@ -16,6 +16,7 @@ def write_report(fname, sheets, hdf_if_fail=True, verbose=True, **kwargs):
             
             if hdf_if_fail:
                 if verbose: print('ran into issue: desired output file is too big for excel sheet.')
+                if verbose: print('with topicmodel or glove subcommands you can use the flag "--nosave_wordmatrix" to reduce output size.')
                 if verbose: print('saving as hdf instead.')
                 path, file = os.path.split(fname)
                 base, ext = os.path.splitext(file)
@@ -104,7 +105,6 @@ def make_human_report(df):
     mi = pd.MultiIndex.from_tuples([(totalsindname,c) for c in totser.index])
     totser.index = mi
     hser = hser.append(totser)
-    print(hser)
     
     return hser
     
