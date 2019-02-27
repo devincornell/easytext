@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import itertools
 
 def write_report(fname, sheets, hdf_if_fail=True, verbose=True, **kwargs):
     '''
@@ -38,7 +39,13 @@ def write_report(fname, sheets, hdf_if_fail=True, verbose=True, **kwargs):
     
     return final_fname
 
-def write_excel(fname,sheets,topn=None,):
+def write_excel(fname,sheets):
+    '''
+        Write excel file.
+        inputs:
+            fname: output file path
+            sheets: tuple of name,dataframe pairs to add.
+    '''
     
     writer = pd.ExcelWriter(fname)
     for sheetname, sheetdf in sheets:
@@ -47,15 +54,29 @@ def write_excel(fname,sheets,topn=None,):
         
                 
 
-def write_hdf(fname, sheets, topn=None):
+def write_hdf(fname, sheets):
     '''
-        Write to hdf file according to sheetnames.
+        Write hdf file.
+        inputs:
+            fname: output file path
+            sheets: tuple of name,dataframe pairs to add.
     '''
+    
     for sheetname, sheetdf in sheets:
         sheetdf.to_hdf(fname, sheetname)
 
         
-
+def make_summary(df, show_n=30):
+    '''
+        Makes summary by sorting values in each row
+            then listing top dimensions (or counts) in that document.
+    '''
+    ncols = min(show_n,len(df.columns))
+    sdf = pd.DataFrame(index=df.index,columns=range(ncols))
+    for ind in df.index:
+        vals = df.loc[ind,:].sort_values(ascending=False)
+        sdf.loc[ind,:] = list(vals.index)[:ncols]
+    return sdf
 
 
 def make_human_report(ctlist, names):
@@ -79,7 +100,7 @@ def make_human_report(ctlist, names):
     #df['docname'] = df.index.get_level_values('docname')
     df = df.sort_values(['docname','count'],ascending=[True,False])
     #del df['docname']
-            
+    
     return df
 
 def count_totals(allcts):
@@ -90,3 +111,34 @@ def count_totals(allcts):
                 totals[n] = 0
             totals[n] += ct
     return totals
+
+def make_human_report(df):
+    '''
+        Creates human readable report from raw values dataframe,
+            essentially by folding columns into multi-index then 
+            sorting.
+    '''
+    
+    indcolname = '__indexcol__' # remporary column for sorting
+    valuescolname = 'values'
+    totalsindname = '__Totals__'
+    mi = pd.MultiIndex.from_tuples(itertools.product(map(str,df.index),df.columns))
+    hdf = pd.DataFrame(index=mi, columns=[valuescolname,indcolname])
+    for doc,val in hdf.index:
+        hdf.loc[(doc,val,),valuescolname] = df.loc[doc,val]
+    
+    # sort based on docs then values
+    hdf[indcolname] = list(hdf.index.get_level_values(0))
+    hdf = hdf.sort_values([indcolname,valuescolname],ascending=[True,False])
+    hser = hdf[valuescolname]
+    
+    # create totals value at bottom
+    totser = df.sum(axis=0).sort_values(ascending=False)
+    mi = pd.MultiIndex.from_tuples([(totalsindname,c) for c in totser.index])
+    totser.index = mi
+    hser = hser.append(totser)
+    print(hser)
+    
+    return hser
+    
+    

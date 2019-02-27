@@ -3,21 +3,13 @@ from glob import glob
 import spacy
 import pandas as pd
 from argparse import ArgumentParser
-import os.path
 import re
 from empath import Empath
 
 from .easytext import easyparse
 from .algorithms import glove, lda, nmf
-from .reports import write_report, make_human_report
-#from .tools import dict2df
-
-def read_text_file(fname):
-    with open(fname, 'rb') as f:
-        text = f.read().decode('ascii',errors='ignore')
-    return text
-
-
+from .reports import write_report, make_human_report, make_summary
+from .fileio import read_input_files
 
 def make_parser():
     # example: python -m easytextanalysis --sentiment --topicmodel --prepphrases texts/* output.csv
@@ -76,77 +68,6 @@ def make_parser():
 
 
 
-def filenames_to_docnames(fnames):
-    '''
-        Convert original file names to more readable names
-            wile checking to make sure there are no collisions.
-    '''
-    newnames = list()
-    for fn in fnames:
-        base = os.path.basename(fn)
-        basename = os.path.splitext(base)[0]
-        newnames.append(basename)
-    
-    # check and make sure it didn't wipe out any redundancies
-    # (this could happen if pulling from multiple folders or catching multiple file extensions)
-    if len(set(newnames)) != len(newnames):
-        newnames = fnames
-    
-    return newnames
-        
-
-
-
-def read_input_files(infiles,doclabelcol,textcol):
-    '''
-        Reads single or multiple text files or an excel/csv file.
-    '''
-    
-    # read multiple text files
-    if len(infiles) > 1:
-        texts = [read_text_file(fn) for fn in infiles]
-        docnames = filenames_to_docnames(infiles)
-    
-    else:
-        fname = infiles[0]
-        fext = os.path.splitext(os.path.basename(fname))[1]
-        
-        # read single text file
-        if fext == '.txt':
-            text = read_text_file(fname)
-            textnames = [(i,t) for i,t in enumerate(text.split('\n')) if len(t) > 0]
-            docnames = [str(i) for i,t in textnames]
-            texts = [t for i,t in textnames]
-            
-        # read spreadsheet file using pandas
-        elif fext in ('.xlsx','.xls','.csv',):
-            try:
-                if fext == '.csv':
-                    df = pd.read_csv(fname)
-                elif fext in ('.xlsx','.xls'):
-                    df = pd.read_excel(fname)
-            except:
-                raise Exception('There was a problem reading the {} file.'.format(fext))
-                
-            # perform checks on column names
-            if textcol not in df.columns:
-                raise Exception('The text column name was not found in spreadsheet:', textcol)
-            if doclabelcol is not None and doclabelcol not in df.columns:
-                raise Exception('The column name for document labels was not found in the spreadsheet:', doclabelcol)
-                
-            # extract texts and doclabels
-            texts = [str(v) for v in df[textcol]]
-            if doclabelcol is not None:
-                docnames = [str(n) for n in df[doclabelcol]]
-            else:
-                docnames = [str(i) for i in range(df.shape[0])]
-
-        else:
-            raise Exception('You need to pass an xls or 1+ txt files.')
-            
-    return texts, docnames
-
-
 def parse_keywords(kw):
     if kw is None:
         return None
@@ -155,10 +76,6 @@ def parse_keywords(kw):
     kwgroups = [kwg for kwg in kwgroups if len(kwg)>0]
     
     return kwgroups
-
-
-
-
 
 
 if __name__ == '__main__':
@@ -247,14 +164,21 @@ if __name__ == '__main__':
         analyze = lambda t: lexicon.analyze(t, categories=cats, normalize= not args.no_normalize)
         sentiments = [analyze(t) for t in texts]
         
-        if args.human_readable:
-            sdf = make_human_report(sentiments, docnames)
-        else:
-            sdf = pd.DataFrame(sentiments,index=docnames)
         
+        df = pd.DataFrame(sentiments,index=docnames)
+        summarydf = make_summary(df)
+        
+        sheets = list()
+        if args.human_readable:
+            hdf = make_human_report(df)
+            sheets.append( ('report',hdf) )
+        else:
+            sheets.append( ('report',df))
+        sheets.append(('summary',summarydf))
+            
         final_fname = write_report(
             args.outfile, 
-            (('sentiment',sdf),), 
+            sheets, 
             hdf_if_fail=not args.nohdfonfail and not args.human_readable, 
             verbose=True,
         )
