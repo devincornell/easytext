@@ -1,4 +1,8 @@
 import pandas as pd
+import os.path
+
+
+from .reports import write_report
 
 class DocModel:
     '''
@@ -100,25 +104,27 @@ class DocModel:
             df.loc[doc,:] = list(topfeat.index)
         
         return df
-        
-        
-    def write_report(self, fname, topn=None, sheetnames=None):
+    
+    def write_report(self, fname, save_wordmatrix=False, featurename=None, summary_topn=None, **kwargs):
         '''
-            Will write excel sheet file with sheets corresponding to summary/models.
+            simply calls write_report after inputting desired dataframes.
+            inputs:
+                **kwargs goes to write_report() directly.
         '''
-        if sheetnames is None:
-            sheetnames = ('docfeatures','featurewords','docsummary','featuresummary')
-        else:
-            assert(len(sheetnames) == 4)
+        if featurename is None:
+            featurename = 'feature'
+            
+        sheets = list()
+        sheets.append(('doc_{}'.format(featurename),self.doc_features))
+        if save_wordmatrix: sheets.append(('{}_words'.format(featurename), self.feature_words))
+        sheets.append(('doc_summary', self.doc_feature_summary(summary_topn)))
+        sheets.append(('{}_summary'.format(featurename),self.feature_words_summary(summary_topn)))
         
-        df_docsummary = self.doc_feature_summary(topn)
-        df_featsummary = self.feature_words_summary(topn)
-        
-        # write to file self.Nfeat
-        writer = pd.ExcelWriter(fname)
-        self.doc_features.to_excel(writer,sheetnames[0])
-        self.feature_words.to_excel(writer, sheetnames[1])
-        df_docsummary.to_excel(writer, sheetnames[2])
-        df_featsummary.to_excel(writer, sheetnames[3])
+        return write_report(fname, sheets, **kwargs)
+    
 
-        writer.save()
+        
+
+    
+
+        

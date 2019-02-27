@@ -7,6 +7,8 @@ from glove import Glove, Corpus
 from .glovetools import glove_transform_paragraph, glove_projection, supervised_vectors
 from .docmodel import DocModel
 
+
+
 def lda(docbows, n_topics, random_state=0, min_tf=2, learning_method='online', docnames=None, **kwargs):
 
     vectorizer = CountVectorizer(tokenizer = lambda x: x, preprocessor=lambda x:x,min_df=min_tf)
@@ -62,17 +64,41 @@ def pretenddocs(docsents):
         yield [w for sent in doc for w in sent]
 
 
-
+def calc_cutoffind(freqs,min_tf):
+    '''
+        Using an ordered frequency list (biggest->smallest), identifies index of 
+            first item to be cut off.
+        
+        freqs: ordered frequency list (biggest->smallest)
+        min_tf: smallest frequency to accept.
+    '''
+    if min_tf > freqs[0]:
+        raise Exception('Cutoff {} is larger than largest frequency {}.'.format(min_tf,freqs[0]))
+    if min_tf <= freqs[-1]:
+        return len(freqs)
+    
+    i = 0
+    while freqs[i] >= min_tf:
+        i += 1
+    
+    return i
+    
+        
+        
 def glove(docsents, n_dim, random_state=0, min_tf=1, docnames=None, keywords=None, **kwargs):
+    
+    '''
+        Creates a glove model from docsents.
+        n_dim: number of dimensions
+        random_state: to seed random initializer
+        min_tf: exclused all tokens that appear less than 
+    '''
     
     # count frequencies
     fdist = Counter([w for s in pretendsents(docsents) for w in s])
     sfdist = list(sorted(fdist.items(),key=lambda x:x[1],reverse=True))
     dictionary = {wf[0]:i for i,wf in enumerate(sfdist)}
-    try:
-        cutoff = [f for w,f in sfdist].index(min_tf)
-    except ValueError:
-        cutoff = len(sfdist)
+    cutoff = calc_cutoffind([f for w,f in sfdist],min_tf)
 
     # calculate corpus matrix
     corpus = Corpus(dictionary=dictionary)

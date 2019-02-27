@@ -7,16 +7,40 @@ from collections import Counter
     
 # ________________________ Pipeline Component Definitions __________________________
 
+# criteria to keep token (allows for tokens that begin with apostrophie)
+# used in ExtractWordListPipeline and ExtractSentListPipeline
+def use_token(tok):
+    return tok.is_alpha or (tok.text[0] == "'" and tok.text[1:].isalpha())
+
+def combine_ent_tokens(doc):
+    # got code from internet
+    for ent in doc.ents:
+        ent.merge(tag=ent.root.tag_, ent_type=ent.root.ent_type_)
+    
+
 class ExtractWordListPipeline():
     #name = 'easytext-wordlist'
-    def __init__(self,nlp):
+    def __init__(self,nlp, kwargs):
+        self.use_ents = kwargs['use_ents']
+        
         if not Doc.has_extension('easytext'):
             Doc.set_extension('easytext', default=dict())
         
+        if self.use_ents:
+            if 'ner' not in nlp.pipe_names:
+                nercomponent = nlp.create_pipe('ner') 
+                nlp.add_pipe(nercomponent,first=True)
+            self.usetext = lambda t: t.lower_ if t.ent_type_=='' else t.text
+        else:
+            self.usetext = lambda t: t.lower_
+            
     def __call__(self, doc):
         
-        usetok = lambda t: t.is_alpha or (t.text[0] == "'" and t.text[1:].isalpha())
-        wordlist = [t.lower_ for t in doc if usetok(t)]
+        # to combine entities
+        if self.use_ents:
+            combine_ent_tokens(doc)
+        
+        wordlist = [self.usetext(t) for t in doc if use_token(t)]
         
         doc._.easytext['wordlist'] = wordlist
         
@@ -24,14 +48,28 @@ class ExtractWordListPipeline():
     
 class ExtractSentListPipeline():
     #name = 'easytext-wordlist'
-    def __init__(self,nlp):
+    def __init__(self,nlp, kwargs):
+        self.use_ents = kwargs['use_ents']
+        
         if not Doc.has_extension('easytext'):
             Doc.set_extension('easytext', default=dict())
+            
+        if self.use_ents:
+            if 'ner' not in nlp.pipe_names:
+                nercomponent = nlp.create_pipe('ner') 
+                nlp.add_pipe(nercomponent,first=True)
+            self.usetext = lambda t: t.lower_ if t.ent_type_=='' else t.text
+        else:
+            self.usetext = lambda t: t.lower_
+            
         
     def __call__(self, doc):
         
-        usetok = lambda t: t.is_alpha or (t.text[0] == "'" and t.text[1:].isalpha())
-        sentlist = [[t.lower_ for t in s if usetok(t)] for s in doc.sents]
+        
+        if self.use_ents:
+            combine_ent_tokens(doc)
+        
+        sentlist = [[self.usetext(t) for t in s if use_token(t)] for s in doc.sents]
         
         doc._.easytext['sentlist'] = sentlist
         
@@ -39,7 +77,7 @@ class ExtractSentListPipeline():
 
 class ExtractPrepositionsPipeline():
     #name = 'easytext-prepositions'
-    def __init__(self,nlp):
+    def __init__(self,nlp, kwargs):
         
         if not Doc.has_extension('easytext'):
             Doc.set_extension('easytext', default=dict())        
@@ -67,7 +105,7 @@ def get_nounverb(noun):
     
 class ExtractNounVerbsPipeline():
     #name = 'easytext-nounverbs'
-    def __init__(self,nlp):
+    def __init__(self,nlp, kwargs):
         #self.phrases = list()
         if not Doc.has_extension('easytext'):
             Doc.set_extension('easytext', default=dict())        
@@ -102,7 +140,7 @@ def getverb(tok):
     
 class ExtractEntVerbsPipeline():
     #name = 'easytext-entverbs'
-    def __init__(self,nlp):
+    def __init__(self,nlp, kwargs):
         if not Doc.has_extension('easytext'):
             Doc.set_extension('easytext', default=dict())
         
@@ -138,9 +176,9 @@ def get_basetext(etext):
 
 class ExtractEntListPipeline():
     #name = 'easytext-entlist'
-    def __init__(self, nlp, use_ent_types=None):
+    def __init__(self, nlp, kwargs):
         #self.allents = list()
-        self.use_ent_types = use_ent_types
+        self.use_ent_types = kwargs['use_ent_types']
         self.entmap = dict() # basetext -> list(entnames)
         
         # these will be set by spacy in the pipeline
