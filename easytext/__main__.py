@@ -42,7 +42,6 @@ def make_parser():
     add_to_subparser(gparser)
     gparser.add_argument('-d', '--dimensions', type=int, required=True, help='Numer of embedding dimensions.')
     gparser.add_argument('-kw','--keywords', type=str, help='Keywords orient embedding dimensions.')
-    gparser.add_argument('-s','--seed', type=int, default=0, help='Integer to see glove model estimation.')
     gparser.add_argument('-m','--min_tf', type=int, default=0, help='Seed to be used to init topic model.')
     gparser.add_argument('-nswm','--nosave_wordmatrix', action='store_true', help='Don\'t save word matrix in excel (helps to make smaller files).')
     
@@ -113,6 +112,7 @@ if __name__ == '__main__':
             n_topics=args.numtopics, 
             docnames=docnames,
             min_tf=args.min_tf,
+            random_state=args.seed,
         )
         
         print('writing output report')
