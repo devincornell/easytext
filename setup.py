@@ -15,6 +15,7 @@ setup(name='easytext',
         'pandas',
         'numpy',
         'glove_python',
+        'empath',
     ],
     zip_safe=False,
 )

@@ -5,18 +5,12 @@ import pandas as pd
 from argparse import ArgumentParser
 import os.path
 import re
+from empath import Empath
 
 from .easytext import easyparse
 from .algorithms import glove, lda, nmf
-
-#print(os.path.basename(your_path))
-
-#from .easytext import EasyTextPipeline # (this one does it all)
-#from .ner import ExtractEntsPipeline
-#from .grammar import ExtractPrepositionsPipeline, ExtractNounVerbsPipeline, ExtractEntVerbsPipeline
-
-
-from .tools import dict2df
+from .reports import write_report, make_human_report
+#from .tools import dict2df
 
 def read_text_file(fname):
     with open(fname, 'rb') as f:
@@ -59,6 +53,13 @@ def make_parser():
     gparser.add_argument('-s','--seed', type=int, default=0, help='Integer to see glove model estimation.')
     gparser.add_argument('-m','--min_tf', type=int, default=0, help='Seed to be used to init topic model.')
     gparser.add_argument('-nswm','--nosave_wordmatrix', action='store_true', help='Don\'t save word matrix in excel (helps to make smaller files).')
+    
+    # parser for sentiment analysis
+    sparser = subparsers.add_parser('sentiment', help='Compute sentiment analysis on corpus using Stanford empath.')
+    add_to_subparser(sparser)
+    sparser.add_argument('-o','--posneg-only', action='store_true', help='Include only positive and negative emotion categories.')
+    sparser.add_argument('-n','--no-normalize', action='store_true', help='Don\'t normalize counts by document length.')
+    sparser.add_argument('-hr','--human-readable', action='store_true', help='Organize output to be read by humans.')
     
     # parser for entity extraction
     eparser = subparsers.add_parser('entities', help='Run Named Entity Recognition (NER).')
@@ -235,6 +236,31 @@ if __name__ == '__main__':
             hdf_if_fail = not args.nohdfonfail,
         )
         print('saved result as', final_fname)
+    
+    elif args.command == 'sentiment':
+        lexicon = Empath()
+        if args.posneg_only:
+            cats = ['positive_emotion','negative_emotion']
+        else:
+            cats = None # all the categories
+            
+        analyze = lambda t: lexicon.analyze(t, categories=cats, normalize= not args.no_normalize)
+        sentiments = [analyze(t) for t in texts]
+        
+        if args.human_readable:
+            sdf = make_human_report(sentiments, docnames)
+        else:
+            sdf = pd.DataFrame(sentiments,index=docnames)
+        
+        final_fname = write_report(
+            args.outfile, 
+            (('sentiment',sdf),), 
+            hdf_if_fail=not args.nohdfonfail and not args.human_readable, 
+            verbose=True,
+        )
+            
+        print('saved result as', final_fname)
+        
     
     elif args.command == 'entities':
         pass

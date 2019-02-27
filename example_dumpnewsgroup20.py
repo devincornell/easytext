@@ -14,7 +14,7 @@ import os
 import glob
 
 if __name__ == '__main__':
-    TARGET_DIR = 'example_tmp'
+    TARGET_DIR = 'tmp'
     
     # make dir if it doesn't exist
     if not os.path.isdir(TARGET_DIR):

@@ -10,19 +10,15 @@ def write_report(fname, sheets, hdf_if_fail=True, verbose=True, **kwargs):
     if fext in ('.xls','.xlsx'):
         try:
             write_excel(fname, sheets,**kwargs)
-            #if verbose: print('Successfully wrote as excel:', fname)
         except AttributeError:
             # weird error where dataframes are too big
             
             if hdf_if_fail:
-                print('ran into issue: desired output file is too big for excel sheet.')
-                print('saving as hdf instead.')
-                # change filename to an .h5 that doesn't exist
-                #basename = os.path.splitext(fname)[0]
+                if verbose: print('ran into issue: desired output file is too big for excel sheet.')
+                if verbose: print('saving as hdf instead.')
                 path, file = os.path.split(fname)
                 base, ext = os.path.splitext(file)
                 
-                #newfname = os.rename(fname, basename + '.h5')
                 newfname = path + base + '.h5'
                 if os.path.isfile(newfname):
                     i = 1
@@ -37,7 +33,6 @@ def write_report(fname, sheets, hdf_if_fail=True, verbose=True, **kwargs):
                 
     elif fext in ('.h5','.hdf'):
         write_hdf(fname, sheets, **kwargs)
-        #if verbose: print('saved file as hdf:', fname)
     else:
         raise Exception('File extension {} was not recognized as a valid output format.'.format(fext))
     
@@ -45,10 +40,6 @@ def write_report(fname, sheets, hdf_if_fail=True, verbose=True, **kwargs):
 
 def write_excel(fname,sheets,topn=None,):
     
-    # this function is wrapped in try-catch so can revert to hdf if needed
-    #with pd.ExcelWriter(fname) as writer:
-    #    for sheetname, sheetdf in sheets:
-    #        sheetdf.to_excel(writer,sheetname)
     writer = pd.ExcelWriter(fname)
     for sheetname, sheetdf in sheets:
         sheetdf.to_excel(writer,sheetname)
@@ -62,3 +53,40 @@ def write_hdf(fname, sheets, topn=None):
     '''
     for sheetname, sheetdf in sheets:
         sheetdf.to_hdf(fname, sheetname)
+
+        
+
+
+
+def make_human_report(ctlist, names):
+    '''
+        Converts list of dictionaries into flattened dataframe.
+    '''
+    #Nrows = sum([len(cts) for cts in ctlist])
+    totalcts = count_totals(ctlist)
+    
+    allnames = list(names) + ['Totals',]
+    allcts = list(ctlist) + [totalcts,]
+    
+    ind = [(nm,val) for nm,valcts in zip(allnames,allcts) for val,ct in valcts.items()]
+    mi = pd.MultiIndex.from_tuples(ind).rename(('docname','value'),)
+    df = pd.DataFrame(index=mi, columns=('count',))
+    
+    for nm,valcts in zip(allnames,allcts):
+        for val,ct in valcts.items():
+            df.loc[(nm,val),'count'] = ct
+            
+    #df['docname'] = df.index.get_level_values('docname')
+    df = df.sort_values(['docname','count'],ascending=[True,False])
+    #del df['docname']
+            
+    return df
+
+def count_totals(allcts):
+    totals = dict()
+    for cts in allcts:
+        for n,ct in cts.items():
+            if n not in totals.keys():
+                totals[n] = 0
+            totals[n] += ct
+    return totals

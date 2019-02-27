@@ -42,12 +42,7 @@ def dict2df(ctlist, names):
             df.loc[ind,'count'] = sortcts[j][1]
     
     df.loc[['Totals',],'doc'] = 'Totals'
-    #for 
-    
-    #df.loc[('_Totals_',0),'doc'] = '_Totals_'
-    #df.loc[('_Totals_',0),value] = '_Totals_'
-    #df.loc[('_Totals_',0),'doc'] = '_Totals_'
-            
+    s
     return df
     
     
