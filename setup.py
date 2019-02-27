@@ -2,7 +2,7 @@
 from setuptools import setup
 
 setup(name='easytext',
-    version='0.1',
+    version='0.2',
     description='Simple text analysis tools.',
     url='https://github.com/devincornell/easytext',
     author='Devin J. Cornell',
@@ -14,8 +14,9 @@ setup(name='easytext',
         'spacy',
         'pandas',
         'numpy',
-        'glove',
-    ]
-    zip_safe=False)
+        'glove_python',
+    ],
+    zip_safe=False,
+)
 
 

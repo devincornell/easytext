@@ -30,6 +30,7 @@ def make_parser():
     parser = ArgumentParser()
     
     subparsers = parser.add_subparsers(dest='command')
+    subparsers.required = True
     
     def add_to_subparser(subparser):
         subparser.add_argument('infiles', nargs='+', help='Input files.')
