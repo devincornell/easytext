@@ -79,39 +79,6 @@ def make_summary(df, show_n=30):
     return sdf
 
 
-def make_human_report(ctlist, names):
-    '''
-        Converts list of dictionaries into flattened dataframe.
-    '''
-    #Nrows = sum([len(cts) for cts in ctlist])
-    totalcts = count_totals(ctlist)
-    
-    allnames = list(names) + ['Totals',]
-    allcts = list(ctlist) + [totalcts,]
-    
-    ind = [(nm,val) for nm,valcts in zip(allnames,allcts) for val,ct in valcts.items()]
-    mi = pd.MultiIndex.from_tuples(ind).rename(('docname','value'),)
-    df = pd.DataFrame(index=mi, columns=('count',))
-    
-    for nm,valcts in zip(allnames,allcts):
-        for val,ct in valcts.items():
-            df.loc[(nm,val),'count'] = ct
-            
-    #df['docname'] = df.index.get_level_values('docname')
-    df = df.sort_values(['docname','count'],ascending=[True,False])
-    #del df['docname']
-    
-    return df
-
-def count_totals(allcts):
-    totals = dict()
-    for cts in allcts:
-        for n,ct in cts.items():
-            if n not in totals.keys():
-                totals[n] = 0
-            totals[n] += ct
-    return totals
-
 def make_human_report(df):
     '''
         Creates human readable report from raw values dataframe,
