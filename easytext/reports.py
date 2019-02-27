@@ -41,7 +41,7 @@ def write_report(fname, sheets, hdf_if_fail=True, verbose=True, **kwargs):
 
 def write_excel(fname,sheets):
     '''
-        Write excel file.
+        Write excel file (usually called from write_report).
         inputs:
             fname: output file path
             sheets: tuple of name,dataframe pairs to add.
@@ -56,7 +56,7 @@ def write_excel(fname,sheets):
 
 def write_hdf(fname, sheets):
     '''
-        Write hdf file.
+        Write hdf file (usually called from write_report).
         inputs:
             fname: output file path
             sheets: tuple of name,dataframe pairs to add.

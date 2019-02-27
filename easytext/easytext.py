@@ -1,6 +1,11 @@
 
 from .pipelines import *
 
+from collections import Counter
+from spacy.tokens import Doc
+import string
+
+
 
 # VVVVVVVVVVVVVVVVVVVV PIPELINE COMPONENTS VVVVVVVVVVVVVVVVVVVVVVV
 
@@ -70,4 +75,3 @@ class EasyTextPipeline():
         return doc
 
 
-    
