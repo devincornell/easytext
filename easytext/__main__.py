@@ -35,6 +35,23 @@ def make_parser():
     wparser.add_argument('-m','--min_tf', type=int, default=1, help='Count all words that appear a minimum of min_tf times in corpus. Warning: could lead to really large & sparse output files.')
     wparser.add_argument('-hr','--human-readable', action='store_true', help='Organize output to be read by humans.')
     
+    # parser for sentiment analysis
+    sparser = subparsers.add_parser('sentiment', help='Compute sentiment analysis on corpus using Stanford empath.')
+    add_to_subparser(sparser)
+    sparser.add_argument('-o','--posneg-only', action='store_true', help='Include only positive and negative emotion categories.')
+    sparser.add_argument('-n','--no-normalize', action='store_true', help='Don\'t normalize counts by document length.')
+    sparser.add_argument('-hr','--human-readable', action='store_true', help='Organize output to be read by humans.')
+    
+    
+    # parser for entity extraction
+    eparser = subparsers.add_parser('entities', help='Run Spacy Named Entity Recognition (NER).')
+    add_to_subparser(eparser)
+    eparser.add_argument('-m','--min_tf', type=int, default=1, help='Minimum number of total entity occurrences to include in the model.')
+    eparser.add_argument('-hr','--human-readable', action='store_true', help='Organize output to be read by humans.')
+    eparser.add_argument('-ut','--use-types', type=str, help='Entity types to use. Format: "etype1,etype2".')
+    eparser.add_argument('-it','--ignore-types', type=str, help='Entity types to ignore. Format: "etype1,etype2".')
+    
+    
     # create the parser for topic modeling arguments
     tmparser = subparsers.add_parser('topicmodel', help='Run topic modeling algorithms (LDA or NMF).')
     add_to_subparser(tmparser)
@@ -51,21 +68,6 @@ def make_parser():
     gparser.add_argument('-kw','--keywords', type=str, help='Keywords orient embedding dimensions. Format: "word1,word2|word3", where vector dimension 1 is "word1" + "word2", and dimension 2 is the vector "word3" rejected from dimension 1.')
     gparser.add_argument('-m','--min_tf', type=int, default=0, help='Minimum number of word occurrences to include in the model.')
     gparser.add_argument('-nswm','--nosave_wordmatrix', action='store_true', help='Don\'t save word matrix in excel (helps to make smaller files).')
-    
-    # parser for sentiment analysis
-    sparser = subparsers.add_parser('sentiment', help='Compute sentiment analysis on corpus using Stanford empath.')
-    add_to_subparser(sparser)
-    sparser.add_argument('-o','--posneg-only', action='store_true', help='Include only positive and negative emotion categories.')
-    sparser.add_argument('-n','--no-normalize', action='store_true', help='Don\'t normalize counts by document length.')
-    sparser.add_argument('-hr','--human-readable', action='store_true', help='Organize output to be read by humans.')
-    
-    # parser for entity extraction
-    eparser = subparsers.add_parser('entities', help='Run Spacy Named Entity Recognition (NER).')
-    add_to_subparser(eparser)
-    eparser.add_argument('-m','--min_tf', type=int, default=1, help='Minimum number of total entity occurrences to include in the model.')
-    eparser.add_argument('-hr','--human-readable', action='store_true', help='Organize output to be read by humans.')
-    eparser.add_argument('-ut','--use-types', type=str, help='Entity types to use. Format: "etype1,etype2".')
-    eparser.add_argument('-it','--ignore-types', type=str, help='Entity types to ignore. Format: "etype1,etype2".')
     
     # parser for entity peace
     grparser = subparsers.add_parser('grammar', help='Run grammatical expression extraction.')

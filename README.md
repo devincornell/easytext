@@ -37,8 +37,20 @@ Uses spacy tokenizer.
 #### Word Count Docs
 
 ```
+usage: __main__.py wordcount [-h] [-dn DOCLABELCOL] [-c TEXTCOL] [-nhd]
+                             [-w WORDS] [-m MIN_TF] [-hr]
+                             infiles [infiles ...] outfile
 
-
+  -w WORDS, --words WORDS
+                        Comma-separated words to count in each document. Each
+                        word will be a column. i.e. "word1,word2" to count
+                        just two words.
+  -m MIN_TF, --min_tf MIN_TF
+                        Count all words that appear a minimum of min_tf times
+                        in corpus. Warning: could lead to really large &
+                        sparse output files.
+  -hr, --human-readable
+                        Organize output to be read by humans.
 
 ```
 
@@ -56,6 +68,24 @@ python -m easytext wordcount tmp/*.txt testoutput/words_manual.xlsx --words 'new
 Count the number of times "news" appears in the corpus.
 
 ### Sentiment Analysis
+
+Uses the Empath dictionary-based python library for calculating sentiment. Can choose to identify positive/negative sentiment only.
+
+https://github.com/Ejhfast/empath-client
+
+
+#### Sentiment Help Docs
+
+```
+usage: __main__.py sentiment [-h] [-dn DOCLABELCOL] [-c TEXTCOL] [-nhd] [-o]
+                             [-n] [-hr]
+                             infiles [infiles ...] outfile
+
+  -o, --posneg-only     Include only positive and negative emotion categories.
+  -n, --no-normalize    Don't normalize counts by document length.
+  -hr, --human-readable
+                        Organize output to be read by humans.
+```
 
 
 #### Sentiment Examples
@@ -84,7 +114,7 @@ Sentiment analysis oonly using positive/negative sentiment.
 ### Topic Modeling
 
 
-From the docs:
+#### Topic Modeling Help Docs
 
 ```
 usage: __main__.py topicmodel [-h] [-dn DOCLABELCOL] [-c TEXTCOL] [-nhd] -n
@@ -92,17 +122,6 @@ usage: __main__.py topicmodel [-h] [-dn DOCLABELCOL] [-c TEXTCOL] [-nhd] -n
                               [-nswm]
                               infiles [infiles ...] outfile
 
-positional arguments:
-  infiles               Input files.
-  outfile               Output file.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -dn DOCLABELCOL, --doclabelcol DOCLABELCOL
-                        Column name for document title/id.
-  -c TEXTCOL, --textcol TEXTCOL
-                        Column name of text data (if excel file provided).
-  -nhd, --nohdfonfail   Don't write hdf if the data is too big for excel.
   -n NUMTOPICS, --numtopics NUMTOPICS
                         Numer of topics.
   -t TYPE, --type TYPE  From ('lda','nmf') choose algorithm.
@@ -114,39 +133,31 @@ optional arguments:
                         files).
 ```
 
-**Latent Dirichlet Allocation Example Command**
+#### Topic Modeling Examples
 ```
 python -m easytext topicmodel example_tmp/*.txt topicmodel_lda.xlsx --numtopics 10 --min_tf 5 --nosave_wordmatrix
 ```
 
+Regular LDA topic model with 10 topics and excluding words that appear less than 5 times. Also doesn't save topic distribution to make a smaller file.
 
 **Non-negative Matrix Factorization Example command**
 ```
 python -m easytext topicmodel example_tmp/*.txt topicmodel_nmf.xlsx --type NMF --numtopics 10 --min_tf 5 -nswm
 ```
 
+Regular NMF topic model with 10 topics and excluding words that appear less than 5 times. Also doesn't save topic distribution to make a smaller file.
 
 ### GloVe Word Embedding
 
 This function applies the GloVe word embedding space to a corpus, outputting both the raw word embeddings and a document vector estimation. In the future, this may be generalized to an embedding subcommand with doc2vec as another available option. It can also take keyword lists to hyper-rotate the embedding space so that each dimensions keywords create distinct 
-From the docs:
+
+#### GloVe Word Embedding Help Docs
+
 ```
 usage: __main__.py glove [-h] [-dn DOCLABELCOL] [-c TEXTCOL] [-nhd] -d
                          DIMENSIONS [-kw KEYWORDS] [-s SEED] [-m MIN_TF]
                          [-nswm]
                          infiles [infiles ...] outfile
-
-positional arguments:
-  infiles               Input files.
-  outfile               Output file.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -dn DOCLABELCOL, --doclabelcol DOCLABELCOL
-                        Column name for document title/id.
-  -c TEXTCOL, --textcol TEXTCOL
-                        Column name of text data (if excel file provided).
-  -nhd, --nohdfonfail   Don't write hdf if the data is too big for excel.
   -d DIMENSIONS, --dimensions DIMENSIONS
                         Numer of embedding dimensions.
   -kw KEYWORDS, --keywords KEYWORDS
@@ -159,10 +170,7 @@ optional arguments:
                         files).
 ```
 
-**GloVe Examples**
-
-All commands take in a list of .txt files in example_tmp and output a glove model as a spreadsheet in testoutput folder.
-
+#### GloVe Examples
 
 ```
 python -m easytext glove -d 10 tmp/*.txt testoutput/glove_10.xlsx
@@ -193,6 +201,5 @@ python -m easytext glove -d 10 tmp/*.txt testoutput/glove_all.xlsx --nosave_word
 Glove model in 10 dimensional vector space excluding vocab appearing at least 1 time and not saving word matrix (smaller output file) and with vector dimension 1 oriented on the word "news" and dimension 2 oriented towards "event" + "story" rejected from dimension 1. Experimental approach to supervised topic/vector extraction. Let me know if you have any better ideas for this.
 
 
-### GloVe Word Embedding
 
 

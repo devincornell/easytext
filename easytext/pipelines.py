@@ -177,8 +177,10 @@ def get_basetext(etext):
 class ExtractEntListPipeline():
     #name = 'easytext-entlist'
     def __init__(self, nlp, kwargs):
-        #self.allents = list()
+        
         self.use_ent_types = kwargs['use_ent_types']
+        self.ignore_ent_types = kwargs['ignore_ent_types']
+        
         self.entmap = dict() # basetext -> list(entnames)
         
         # these will be set by spacy in the pipeline
@@ -192,29 +194,35 @@ class ExtractEntListPipeline():
         for span in spans:
             span.merge()
 
-        # extract entities
-        if self.use_ent_types is None:
-            ents = [e for e in doc if e.ent_type > 0]
+        # extract entities that meet conditions
+        is_ent = lambda e: e.ent_type > 0 and len(e.text.strip()) > 0
+        if self.use_ent_types is None and self.ignore_ent_types is None:
+            ents = [e for e in doc if is_ent(e)]
+        elif self.use_ent_types is not None:
+            ents = [e for e in doc if is_ent(e) and e.ent_type_ in self.use_ent_types]
+        elif self.ignore_ent_types is not None:
+            ents = [e for e in doc if is_ent(e) and e.ent_type_ not in self.ignore_ent_types]
         else:
-            ents = [e for e in doc if e.ent_type > 0 and e.ent_id_ in self.use_ent_types]
+            raise Exception('shoot - logical error here')
         
         # combine entities if they have same basetext
-        for i in range(len(ents)):
-            basetext = get_basetext(ents[i].text)
+        entdat = list()
+        for ent in ents:
+            basetext = get_basetext(ent.text)
             
             if basetext not in self.entmap.keys():
-                self.entmap[basetext] = [ents[i].text,]
+                self.entmap[basetext] = [ent.text,]
             
-            elif ents[i].text not in self.entmap[basetext]:
-                self.entmap[basetext].append(ents[i].text)
+            elif ent.text not in self.entmap[basetext]:
+                self.entmap[basetext].append(ent.text)
                 
-            ents[i] = (self.entmap[basetext][0],ents[i])
-                       
+            entdat.append( (self.entmap[basetext][0],ent) )
+            
         # count entities in this list
-        entcts = dict(Counter([n for n,e in ents]))
+        entcts = dict(Counter([n for n,e in entdat]))
         
         # set properties into pipeline
-        doc._.easytext['entlist'] = ents
+        doc._.easytext['entlist'] = entdat
         doc._.easytext['entmap'] = self.entmap
         doc._.easytext['entcts'] = entcts
         

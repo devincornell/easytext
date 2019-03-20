@@ -14,7 +14,6 @@ python -m easytext wordcount tmp/*.txt testoutput/words_m10.xlsx --min_tf 10
 python -m easytext wordcount tmp/*.txt testoutput/words_manual.xlsx --words 'news'
 
 
-
 # sentiment
 python -m easytext sentiment tmp/*.txt testoutput/sent_vanilla.xlsx
 
@@ -70,17 +69,6 @@ python -m easytext glove -d 10 tmp/*.txt testoutput/glove_all.xlsx --nosave_word
 
 python -m easytext glove -d 10 tmp/*.txt testoutput/glove_all.xlsx --nosave_wordmatrix -m 3 --keywords 'news|event,story'
 
-
-# sentiment
-python -m easytext sentiment tmp/*.txt testoutput/sent_vanilla.xlsx
-
-python -m easytext sentiment tmp/*.txt testoutput/sent_human.xlsx --human-readable
-
-python -m easytext sentiment tmp/*.txt testoutput/sent_nonorm.xlsx --no-normalize
-
-python -m easytext sentiment tmp/*.txt testoutput/sent_posneg.xlsx --posneg-only
-
-python -m easytext sentiment tmp/*.txt testoutput/sent_all.xlsx --posneg-only --human-readable --no-normalize
 
 
 
