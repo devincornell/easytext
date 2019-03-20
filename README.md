@@ -6,12 +6,13 @@ Text analysis for those of us that don't want to code.
 
 ## Features
 
-* topic modeling with LDA or NMF
-* GloVe Word Embedding algorithm
-* sentiment analysis
-* named entity recognition
-* prepositional phrase detector
-* noun-verb detector
+* word counts (using spacy library tokenizer)
+* sentiment analysis (using python empath library)
+* topic modeling with LDA or NMF (using sklearn library)
+* GloVe Word Embedding algorithm (using python-glove package)
+* named entity recognition (using spacy library ner)
+* prepositional phrase detector (using spacy library parse trees)
+* noun-verb detector (using spacy library parse trees)
 
 **Subcommands**
 ```
@@ -27,8 +28,19 @@ optional arguments:
 
 ```
 
+### Word Counter
+
+
+### Sentiment Analysis
+
+
+
+
+
+
 
 ### Topic Modeling
+
 
 From the docs:
 
@@ -60,19 +72,23 @@ optional arguments:
                         files).
 ```
 
-**Latent Dirichlet Allocation Example**
+**Latent Dirichlet Allocation Example Command**
 ```
 python -m easytext topicmodel example_tmp/*.txt topicmodel_lda.xlsx --numtopics 10 --min_tf 5 --nosave_wordmatrix
 ```
 
 
-**Non-negative Matrix Factorization Example**
+**Non-negative Matrix Factorization Example command**
 ```
-python -m easytext topicmodel example_tmp/*.txt topicmodel_lda.xlsx --type NMF --numtopics 10 --min_tf 5 -nswm
+python -m easytext topicmodel example_tmp/*.txt topicmodel_nmf.xlsx --type NMF --numtopics 10 --min_tf 5 -nswm
 ```
 
 
 ### GloVe Word Embedding
+
+This function applies the GloVe word embedding space to a corpus, outputting both the raw word embeddings and a document vector estimation. In the future, this may be generalized to an embedding subcommand with doc2vec as another available option. It can also take keyword lists to hyper-rotate the embedding space so that each dimensions keywords create distinct 
+
+that orient the vector space using hyper-rotating the vector space by 
 
 From the docs:
 ```
@@ -104,9 +120,40 @@ optional arguments:
                         files).
 ```
 
-**GloVe Example**
+**GloVe Examples**
+
+All commands take in a list of .txt files in example_tmp and output a glove model as a spreadsheet in testoutput folder.
+
 
 ```
-python -m easytext glove example_tmp/*.txt hi.xlsx -d 100 -m 5 -nswm
+python -m easytext glove -d 10 tmp/*.txt testoutput/glove_10.xlsx
 ```
+Glove model in 10 dimension embedding space.
+
+
+```
+python -m easytext glove -d 10 tmp/*.txt testoutput/glove_minct3.xlsx -m 3
+```
+Glove model in 10 dimension vector space excluding all words that appear less than 3 times in the corpus.
+
+
+```
+python -m easytext glove -d 10 tmp/*.txt testoutput/glove_nosavewm.xlsx --nosave_wordmatrix
+```
+Glove model in 10 dimensional vector space that doesn't include the word matrix to minimize output file size. If output size is too big, will save as .hdf which may be more difficult to work on depending on your application.
+
+```
+python -m easytext glove -d 10 tmp/*.txt testoutput/glove_all.xlsx --nosave_wordmatrix -m 3
+```
+Glove model in 10 dimensional vector space excluding vocab appearing at least 3 times and not saving word matrix (smaller output file).
+
+
+```
+python -m easytext glove -d 10 tmp/*.txt testoutput/glove_all.xlsx --nosave_wordmatrix -m 1 --keywords 'news|event,story'
+```
+Glove model in 10 dimensional vector space excluding vocab appearing at least 1 time and not saving word matrix (smaller output file) and with vector dimension 1 oriented on the word "news" and dimension 2 oriented towards "event" + "story" rejected from dimension 1. Experimental approach to supervised topic/vector extraction. Let me know if you have any better ideas for this.
+
+
+### GloVe Word Embedding
+
 

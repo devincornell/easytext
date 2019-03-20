@@ -5,7 +5,7 @@
 
 mkdir testoutput
 
-python example_dumpnewsgroup20.py 20
+python example_dumpnewsgroup20.py 1000000
 
 
 # topic model with lda
@@ -40,6 +40,8 @@ python -m easytext glove -d 10 tmp/*.txt testoutput/glove_minct3.xlsx -m 3
 python -m easytext glove -d 10 tmp/*.txt testoutput/glove_nosavewm.xlsx --nosave_wordmatrix
 
 python -m easytext glove -d 10 tmp/*.txt testoutput/glove_all.xlsx --nosave_wordmatrix -m 3
+
+python -m easytext glove -d 10 tmp/*.txt testoutput/glove_all.xlsx --nosave_wordmatrix -m 3 --keywords 'news|event,story'
 
 
 # sentiment

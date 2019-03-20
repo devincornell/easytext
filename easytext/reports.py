@@ -90,7 +90,7 @@ def make_human_report(df):
     indcolname = '__indexcol__' # remporary column for sorting
     valuescolname = 'values'
     totalsindname = '__Totals__'
-    mi = pd.MultiIndex.from_tuples(itertools.product(map(str,df.index),df.columns))
+    mi = pd.MultiIndex.from_tuples(list(itertools.product(map(str,df.index),df.columns)))
     hdf = pd.DataFrame(index=mi, columns=[valuescolname,indcolname])
     for doc,val in hdf.index:
         hdf.loc[(doc,val,),valuescolname] = df.loc[doc,val]

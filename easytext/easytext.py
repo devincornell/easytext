@@ -18,7 +18,7 @@ ALL_COMPONENTS = {
     'entverbs':{'comp':ExtractEntVerbsPipeline, 'dep':['entlist',]},
 }
 
-DEFAULT_PIPE_ARGS = dict(use_ents=True, use_ent_types=None) # defaults that can be written over
+DEFAULT_PIPE_ARGS = dict(use_ents=True, use_ent_types=None, ignore_ent_types=None) # defaults that can be written over
 def easyparse(nlp,texts,enable=None,pipeargs=dict(),spacyargs=dict()):
     '''
         Runs spacy parser loop only extracting data from enabled custom modules.

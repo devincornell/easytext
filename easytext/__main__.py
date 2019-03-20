@@ -5,6 +5,7 @@ import pandas as pd
 from argparse import ArgumentParser
 import re
 from empath import Empath
+from collections import Counter
 
 from .easytext import easyparse
 from .algorithms import glove, lda, nmf
@@ -26,7 +27,13 @@ def make_parser():
         subparser.add_argument('-c','--textcol', type=str, default='text', help='Column name of text data (if excel file provided).')
         
         subparser.add_argument('-nhd','--nohdfonfail', action='store_true', help='Don\'t write hdf if the data is too big for excel.')
-        
+    
+    # create the parser for word counts
+    wparser = subparsers.add_parser('wordcount', help='Word count across corpus, either by (a) manually selecting words to count or (b) selecting a minimum frequency of words to count.')
+    add_to_subparser(wparser)
+    wparser.add_argument('-w','--words', type=str, help='Comma-separated words to count in each document. Each word will be a column. i.e. "word1,word2" to count just two words.')
+    wparser.add_argument('-m','--min_tf', type=int, default=1, help='Count all words that appear a minimum of min_tf times in corpus. Warning: could lead to really large & sparse output files.')
+    wparser.add_argument('-hr','--human-readable', action='store_true', help='Organize output to be read by humans.')
     
     # create the parser for topic modeling arguments
     tmparser = subparsers.add_parser('topicmodel', help='Run topic modeling algorithms (LDA or NMF).')
@@ -41,8 +48,8 @@ def make_parser():
     gparser = subparsers.add_parser('glove', help='Run glove algorithm.')
     add_to_subparser(gparser)
     gparser.add_argument('-d', '--dimensions', type=int, required=True, help='Numer of embedding dimensions.')
-    gparser.add_argument('-kw','--keywords', type=str, help='Keywords orient embedding dimensions.')
-    gparser.add_argument('-m','--min_tf', type=int, default=0, help='Seed to be used to init topic model.')
+    gparser.add_argument('-kw','--keywords', type=str, help='Keywords orient embedding dimensions. Format: "word1,word2|word3", where vector dimension 1 is "word1" + "word2", and dimension 2 is the vector "word3" rejected from dimension 1.')
+    gparser.add_argument('-m','--min_tf', type=int, default=0, help='Minimum number of word occurrences to include in the model.')
     gparser.add_argument('-nswm','--nosave_wordmatrix', action='store_true', help='Don\'t save word matrix in excel (helps to make smaller files).')
     
     # parser for sentiment analysis
@@ -53,9 +60,12 @@ def make_parser():
     sparser.add_argument('-hr','--human-readable', action='store_true', help='Organize output to be read by humans.')
     
     # parser for entity extraction
-    eparser = subparsers.add_parser('entities', help='Run Named Entity Recognition (NER).')
+    eparser = subparsers.add_parser('entities', help='Run Spacy Named Entity Recognition (NER).')
     add_to_subparser(eparser)
-    eparser.add_argument('-v','--entverbs', action='store_true', help='T/F include entity-verb detection?')
+    eparser.add_argument('-m','--min_tf', type=int, default=1, help='Minimum number of total entity occurrences to include in the model.')
+    eparser.add_argument('-hr','--human-readable', action='store_true', help='Organize output to be read by humans.')
+    eparser.add_argument('-ut','--use-types', type=str, help='Entity types to use. Format: "etype1,etype2".')
+    eparser.add_argument('-it','--ignore-types', type=str, help='Entity types to ignore. Format: "etype1,etype2".')
     
     # parser for entity peace
     grparser = subparsers.add_parser('grammar', help='Run grammatical expression extraction.')
@@ -94,66 +104,58 @@ if __name__ == '__main__':
     
     # IMPLEMENT COMMAND FUNCTIONALITY
     nlp = spacy.load('en')
-    if args.command == 'topicmodel':
-        assert(args.numtopics > 0)
-        assert(args.type.lower() in ('lda','nmf'))
-        assert(args.numtopics < len(texts))
+    # VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV WORD COUNT VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    if args.command == 'wordcount':
         
-        print('converting', len(texts), 'texts to bags-of-words')
-        bows = list()
-        for pw in easyparse(nlp,texts,enable=['wordlist',]):
-            if len(pw['wordlist']) > 0:
-                bows.append(pw['wordlist'])
+        #print('converting', len(texts), 'texts to bags-of-words')
+        if args.words is not None:
+            counts = list()
+            twords = [w.strip() for w in args.words.split(',')]
+            assert(len(twords) > 0)
+            for pw in easyparse(nlp,texts,enable=['wordlist',]):
+                if len(pw['wordlist']) > 0:
+                    wc = dict()
+                    for tword in twords:
+                        wc[tword] = pw['wordlist'].count(tword)
+                    counts.append(wc)
+        else:
+            assert(args.min_tf > 0)
+            print('Counting all words with min_tf of', args.min_tf)
+            
+            docbow = list()
+            for pw in easyparse(nlp,texts,enable=['wordlist',]):
+                if len(pw['wordlist']) > 0:
+                    docbow.append(pw['wordlist'])
+            freq = Counter([w for d in docbow for w in d])
+            twords = [w for w,c in freq.items() if c >= args.min_tf]
+            print('Kept', len(twords), 'words in vocab to count.')
+            counts = list()
+            for bow in docbow:
+                wc = dict()
+                for tword in twords:
+                    wc[tword] = bow.count(tword)
+                counts.append(wc)
         
-        print('performing topic modeling with', args.numtopics, 'topics.')
-        tmfunc = nmf if args.type.lower() == 'nmf' else lda
-        model = tmfunc(
-            docbows=bows, 
-            n_topics=args.numtopics, 
-            docnames=docnames,
-            min_tf=args.min_tf,
-            random_state=args.seed,
-        )
+        # build output sheets
+        sheets = list()
+        df = pd.DataFrame(counts,index=docnames)
+        if args.human_readable:
+            hdf = make_human_report(df)
+            sheets.append(('humancounts',hdf))
+        else:
+            sheets.append(('counts',df))
         
-        print('writing output report')
-        final_fname = model.write_report(
+        # actually write report
+        final_fname = write_report(
             args.outfile, 
-            save_wordmatrix=not args.nosave_wordmatrix, 
-            featurename='topic',
-            hdf_if_fail = not args.nohdfonfail,
+            sheets, 
+            hdf_if_fail=not args.nohdfonfail and not args.human_readable, 
+            verbose=True,
         )
+        
         print('saved result as', final_fname)
         
-    elif args.command == 'glove':
-        assert(args.dimensions > 0)
-        assert(args.dimensions < len(texts))
-        keywords = parse_keywords(args.keywords)
-        
-        # parse texts using spacy
-        print('converting', len(texts), 'texts to sentence lists')
-        docsents = list()
-        for pw in easyparse(nlp,texts,enable=['sentlist']):
-            if len(pw['sentlist']) > 0:
-                docsents.append(pw['sentlist'])
-        
-        print('running glove algorithm with n =', args.dimensions)
-        model = glove(
-            docsents, 
-            args.dimensions,
-            docnames=docnames,
-            keywords=keywords,
-            min_tf=args.min_tf,
-        )
-        
-        print('writing output report to', args.outfile)
-        final_fname = model.write_report(
-            args.outfile, 
-            save_wordmatrix= not args.nosave_wordmatrix, 
-            featurename='dimension',
-            hdf_if_fail = not args.nohdfonfail,
-        )
-        print('saved result as', final_fname)
-    
+    # VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV SENTIMENT VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
     elif args.command == 'sentiment':
         lexicon = Empath()
         if args.posneg_only:
@@ -184,16 +186,136 @@ if __name__ == '__main__':
         )
             
         print('saved result as', final_fname)
-        
     
+    # VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV ENTITIES VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
     elif args.command == 'entities':
-        pass
+        assert(args.min_tf > 0)
+        assert(not (args.ignore_types is not None and args.use_types is not None))
+        
+        # decide which entities to use
+        if args.use_types is not None:
+            pipeargs = {'use_ent_types': [t.strip() for t in args.use_types.split(',')]}
+        if args.ignore_types is not None:
+            pipeargs = {'ignore_ent_types': [t.strip() for t in args.ignore_types.split(',')]}
+        else:
+            # by default, remove these:
+            ignorelist = 'DATE,TIME,PERCENT,MONEY,QUANTITY,ORDINAL,CARDINAL'
+            pipeargs = {'ignore_ent_types': [t.strip() for t in ignorelist.split(',')]}
+        
+        # parse all entities
+        docents = list()
+        for pw in easyparse(nlp,texts,enable=['entlist',],pipeargs=pipeargs):
+            if len(pw['entlist']) > 0:
+                docents.append([n for n,e in pw['entlist']])
+        
+        # determine ents to count
+        freq = Counter([e for d in docents for e in d])
+        tents = [w for w,c in freq.items() if c >= args.min_tf]
+        if len(tents) == 0:
+            raise Exception('No ents reached the count threshold given.')
+        print('Kept', len(tents), 'entities to count.')
+        
+        # count entities per-doc
+        counts = list()
+        for ents in docents:
+            wc = dict()
+            for tent in tents:
+                wc[tent] = ents.count(tent)
+            counts.append(wc)
+        
+        
+        # build output sheets
+        sheets = list()
+        df = pd.DataFrame(counts,index=docnames)
+        if args.human_readable:
+            hdf = make_human_report(df)
+            sheets.append(('humanents',hdf))
+        else:
+            sheets.append(('ents',df))
+        
+        # actually write report
+        final_fname = write_report(
+            args.outfile, 
+            sheets, 
+            hdf_if_fail=not args.nohdfonfail and not args.human_readable, 
+            verbose=True,
+        )
+        print('saved result as', final_fname)
+        
+    # VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV TOPIC MODEL VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    elif args.command == 'topicmodel':
+        assert(args.numtopics > 0)
+        assert(args.type.lower() in ('lda','nmf'))
+        assert(args.numtopics < len(texts))
+        
+        print('converting', len(texts), 'texts to bags-of-words')
+        bows = list()
+        for pw in easyparse(nlp,texts,enable=['wordlist',]):
+            if len(pw['wordlist']) > 0:
+                bows.append(pw['wordlist'])
+        
+        print('performing topic modeling with', args.numtopics, 'topics.')
+        tmfunc = nmf if args.type.lower() == 'nmf' else lda
+        model = tmfunc(
+            docbows=bows, 
+            n_topics=args.numtopics, 
+            docnames=docnames,
+            min_tf=args.min_tf,
+            random_state=args.seed,
+        )
+        
+        print('writing output report')
+        final_fname = model.write_report(
+            args.outfile, 
+            save_wordmatrix=not args.nosave_wordmatrix, 
+            featurename='topic',
+            hdf_if_fail = not args.nohdfonfail,
+        )
+        print('saved result as', final_fname)
+        
+    # VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV GLOVE VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    elif args.command == 'glove':
+        assert(args.dimensions > 0)
+        assert(args.dimensions < len(texts))
+        keywords = parse_keywords(args.keywords)
+        
+        # parse texts using spacy
+        print('converting', len(texts), 'texts to sentence lists')
+        docsents = list()
+        for pw in easyparse(nlp,texts,enable=['sentlist']):
+            if len(pw['sentlist']) > 0:
+                docsents.append(pw['sentlist'])
+        
+        print('running glove algorithm with n =', args.dimensions)
+        model = glove(
+            docsents, 
+            args.dimensions,
+            docnames=docnames,
+            keywords=keywords,
+            min_tf=args.min_tf,
+        )
+        
+        print('writing output report to', args.outfile)
+        final_fname = model.write_report(
+            args.outfile, 
+            save_wordmatrix= not args.nosave_wordmatrix, 
+            featurename='dimension',
+            hdf_if_fail = not args.nohdfonfail,
+        )
+        print('saved result as', final_fname)
+        
+    # VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV WORD COUNT VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
     elif args.command == 'grammar':
         pass
+    
+
+    
     else:
         # note: parser gaurantees that one of these options would be set
         raise Exception('Weird error - the command {} hasn\'t been implemented.'.format(args.command))
-    
+
+
 
     exit()
     #====================================================
