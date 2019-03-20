@@ -28,15 +28,57 @@ optional arguments:
 
 ```
 
-### Word Counter
+### Word Counts
 
+Will count the number of times words appear in the corpus, either by identifying terms that appear more than N times or by hand-selecting the words to count.
+
+Uses spacy tokenizer.
+
+#### Word Count Docs
+
+```
+
+
+
+```
+
+
+#### Word Count Examples
+```
+python -m easytext wordcount tmp/*.txt testoutput/words_m10.xlsx --min_tf 10
+```
+Count every word that appears more than 10 times in the corpus.
+
+
+```
+python -m easytext wordcount tmp/*.txt testoutput/words_manual.xlsx --words 'news'
+```
+Count the number of times "news" appears in the corpus.
 
 ### Sentiment Analysis
 
 
+#### Sentiment Examples
+```
+python -m easytext sentiment tmp/*.txt testoutput/sent_vanilla.xlsx
+```
+Run full Empath sentiment analysis on corpus.
+
+```
+python -m easytext sentiment tmp/*.txt testoutput/sent_human.xlsx --human-readable
+```
+Make human-readable sentiment ouptut.
+
+```
+python -m easytext sentiment tmp/*.txt testoutput/sent_nonorm.xlsx --no-normalize
+```
+Make sentiment output using raw word counts
 
 
-
+```
+python -m easytext sentiment tmp/*.txt testoutput/sent_posneg.xlsx --posneg-only
+```
+Sentiment analysis oonly using positive/negative sentiment.
 
 
 ### Topic Modeling
@@ -87,9 +129,6 @@ python -m easytext topicmodel example_tmp/*.txt topicmodel_nmf.xlsx --type NMF -
 ### GloVe Word Embedding
 
 This function applies the GloVe word embedding space to a corpus, outputting both the raw word embeddings and a document vector estimation. In the future, this may be generalized to an embedding subcommand with doc2vec as another available option. It can also take keyword lists to hyper-rotate the embedding space so that each dimensions keywords create distinct 
-
-that orient the vector space using hyper-rotating the vector space by 
-
 From the docs:
 ```
 usage: __main__.py glove [-h] [-dn DOCLABELCOL] [-c TEXTCOL] [-nhd] -d
