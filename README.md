@@ -111,10 +111,86 @@ python -m easytext sentiment tmp/*.txt testoutput/sent_posneg.xlsx --posneg-only
 Sentiment analysis oonly using positive/negative sentiment.
 
 
+
+### Named Entity Recognition
+
+Counts the number of times an entity appears in corpus documents.
+
+**Entity Recognition Docs**
+
+```
+usage: __main__.py entities [-h] [-dn DOCLABELCOL] [-c TEXTCOL] [-nhd]
+                            [-m MIN_TF] [-hr] [-ut USE_TYPES]
+                            [-it IGNORE_TYPES]
+                            infiles [infiles ...] outfile
+
+  -m MIN_TF, --min_tf MIN_TF
+                        Minimum number of total entity occurrences to include
+                        in the model.
+  -hr, --human-readable
+                        Organize output to be read by humans.
+  -ut USE_TYPES, --use-types USE_TYPES
+                        Entity types to use. Format: "etype1,etype2".
+  -it IGNORE_TYPES, --ignore-types IGNORE_TYPES
+                        Entity types to ignore. Format: "etype1,etype2".
+                        
+```
+
+**Entity Recognition Examples**
+
+```
+python -m easytext entities tmp/*.txt testoutput/ent_m10.xlsx --min_tf 10
+```
+Count all entities that appear more than 10 times in the corpus.
+
+
+```
+python -m easytext entities tmp/*.txt testoutput/ent_usetypes.xlsx --min_tf 10 --use-types "PERSON,NORP"
+```
+Count all entities of types PERSON or NORM that appear more than 10 times in the corpus.
+
+
+```
+python -m easytext entities tmp/*.txt testoutput/ent_usetypes.xlsx --min_tf 10 --ignore-types "PERSON,NORP"
+```
+Count all entities of types other than PERSON or NORM that appear more than 10 times in the corpus.
+
+**Entity Type Info**
+
+These entity types are collected from Spacy's NER. The full page is here: https://spacy.io/api/annotation#named-entities
+
+
+This is the table listed there:
+
+```
+TYPE	DESCRIPTION
+PERSON	People, including fictional.
+NORP	Nationalities or religious or political groups.
+FAC	Buildings, airports, highways, bridges, etc.
+ORG	Companies, agencies, institutions, etc.
+GPE	Countries, cities, states.
+LOC	Non-GPE locations, mountain ranges, bodies of water.
+PRODUCT	Objects, vehicles, foods, etc. (Not services.)
+EVENT	Named hurricanes, battles, wars, sports events, etc.
+WORK_OF_ART	Titles of books, songs, etc.
+LAW	Named documents made into laws.
+LANGUAGE	Any named language.
+DATE	Absolute or relative dates or periods.
+TIME	Times smaller than a day.
+PERCENT	Percentage, including ”%“.
+MONEY	Monetary values, including unit.
+QUANTITY	Measurements, as of weight or distance.
+ORDINAL	“first”, “second”, etc.
+CARDINAL	Numerals that do not fall under another type.
+```
+
+
+
 ### Topic Modeling
 
+Performs LDA or NMF topic modeling on corpus using sklearn.
 
-#### Topic Modeling Help Docs
+** Topic Modeling Help Docs **
 
 ```
 usage: __main__.py topicmodel [-h] [-dn DOCLABELCOL] [-c TEXTCOL] [-nhd] -n
@@ -133,14 +209,13 @@ usage: __main__.py topicmodel [-h] [-dn DOCLABELCOL] [-c TEXTCOL] [-nhd] -n
                         files).
 ```
 
-#### Topic Modeling Examples
+**Topic Modeling Examples**
 ```
 python -m easytext topicmodel example_tmp/*.txt topicmodel_lda.xlsx --numtopics 10 --min_tf 5 --nosave_wordmatrix
 ```
 
 Regular LDA topic model with 10 topics and excluding words that appear less than 5 times. Also doesn't save topic distribution to make a smaller file.
 
-**Non-negative Matrix Factorization Example command**
 ```
 python -m easytext topicmodel example_tmp/*.txt topicmodel_nmf.xlsx --type NMF --numtopics 10 --min_tf 5 -nswm
 ```
@@ -151,7 +226,7 @@ Regular NMF topic model with 10 topics and excluding words that appear less than
 
 This function applies the GloVe word embedding space to a corpus, outputting both the raw word embeddings and a document vector estimation. In the future, this may be generalized to an embedding subcommand with doc2vec as another available option. It can also take keyword lists to hyper-rotate the embedding space so that each dimensions keywords create distinct 
 
-#### GloVe Word Embedding Help Docs
+**GloVe Word Embedding Help Docs**
 
 ```
 usage: __main__.py glove [-h] [-dn DOCLABELCOL] [-c TEXTCOL] [-nhd] -d
@@ -170,7 +245,7 @@ usage: __main__.py glove [-h] [-dn DOCLABELCOL] [-c TEXTCOL] [-nhd] -d
                         files).
 ```
 
-#### GloVe Examples
+**GloVe Examples**
 
 ```
 python -m easytext glove -d 10 tmp/*.txt testoutput/glove_10.xlsx
