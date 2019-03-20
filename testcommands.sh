@@ -5,7 +5,34 @@
 
 mkdir testoutput
 
-python example_dumpnewsgroup20.py 1000000
+python example_dumpnewsgroup20.py 100
+
+
+# word count
+python -m easytext wordcount tmp/*.txt testoutput/words_m10.xlsx --min_tf 10
+
+python -m easytext wordcount tmp/*.txt testoutput/words_manual.xlsx --words 'news'
+
+
+
+# sentiment
+python -m easytext sentiment tmp/*.txt testoutput/sent_vanilla.xlsx
+
+python -m easytext sentiment tmp/*.txt testoutput/sent_human.xlsx --human-readable
+
+python -m easytext sentiment tmp/*.txt testoutput/sent_nonorm.xlsx --no-normalize
+
+python -m easytext sentiment tmp/*.txt testoutput/sent_posneg.xlsx --posneg-only
+
+python -m easytext sentiment tmp/*.txt testoutput/sent_all.xlsx --posneg-only --human-readable --no-normalize
+
+
+# named entity recognition
+python -m easytext entities tmp/*.txt testoutput/ent_m10.xlsx --min_tf 10
+
+python -m easytext entities tmp/*.txt testoutput/ent_usetypes.xlsx --min_tf 10 --use-types "PERSON,NORP"
+
+python -m easytext entities tmp/*.txt testoutput/ent_usetypes.xlsx --min_tf 10 --ignore-types "PERSON,NORP"
 
 
 # topic model with lda
