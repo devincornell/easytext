@@ -129,41 +129,6 @@ if __name__ == '__main__':
         raise Exception('Weird error - the command {} hasn\'t been implemented.'.format(args.command))
 
 
-
-    exit()
-    #====================================================
-        
-    
-    # attach spreadsheet components
-    xlswriter = pd.ExcelWriter(args.outfile, engine='xlsxwriter')
-    
-    if len(entcts) > 0:
-        entdf = dict2df(entcts, names)#.applymap(escape)
-        entdf.to_excel(xlswriter, sheet_name='Entities')
-        
-    if len(prepcts) > 0:
-        prepdf = dict2df(prepcts, names)#.applymap(escape)
-        prepdf.to_excel(xlswriter, sheet_name='Prepositions')
-        
-    if len(nvcts) > 0:
-        nvdf = dict2df(nvcts, names)#.applymap(escape)
-        vals = pd.Series(nvdf.index.get_level_values('value'))
-        nvdf['nouns'] = list(vals.apply(lambda x: x[0]))
-        nvdf['verbs'] = list(vals.apply(lambda x: x[1]))
-        nvdf = nvdf[['nouns','verbs','count']]
-        nvdf.index = nvdf.index.droplevel('value')
-        nvdf.to_excel(xlswriter, sheet_name='NounVerbs')
-        
-    if len(evcts) > 0:
-        evdf = dict2df(evcts, names)#.applymap(escape)
-        vals = pd.Series(evdf.index.get_level_values('value'))
-        evdf['entities'] = list(vals.apply(lambda x: x[0]))
-        evdf['verbs'] = list(vals.apply(lambda x: x[1]))
-        evdf = evdf[['entities','verbs','count']]
-        evdf.index = evdf.index.droplevel('value')
-        evdf.to_excel(xlswriter, sheet_name='EntityVerbs')
-        
-    xlswriter.save()
     
         
         
