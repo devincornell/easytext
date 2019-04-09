@@ -41,15 +41,8 @@ def read_input_files(infiles,doclabelcol,textcol):
         fname = infiles[0]
         fext = os.path.splitext(os.path.basename(fname))[1]
         
-        # read single text file
-        if fext == '.txt':
-            text = read_text_file(fname)
-            textnames = [(i,t) for i,t in enumerate(text.split('\n')) if len(t) > 0]
-            docnames = [str(i) for i,t in textnames]
-            texts = [t for i,t in textnames]
-            
         # read spreadsheet file using pandas
-        elif fext in ('.xlsx','.xls','.csv',):
+        if fext in ('.xlsx','.xls','.csv',):
             try:
                 if fext == '.csv':
                     df = pd.read_csv(fname)
@@ -71,6 +64,13 @@ def read_input_files(infiles,doclabelcol,textcol):
             else:
                 docnames = [str(i) for i in range(df.shape[0])]
 
+        # read single text file
+        elif fext == '.txt':
+            text = read_text_file(fname)
+            textnames = [(i,t) for i,t in enumerate(text.split('\n')) if len(t) > 0]
+            docnames = [str(i) for i,t in textnames]
+            texts = [t for i,t in textnames]
+                
         else:
             raise Exception('You need to pass an xls or 1+ txt files.')
             
