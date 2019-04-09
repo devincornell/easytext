@@ -11,8 +11,8 @@ from .reports import write_report, make_human_report, make_summary
 from .easytext import easyparse
 
 def common_args(subparser):
-    subparser.add_argument('infiles', nargs='+', help='Input files.')
-    subparser.add_argument('outfile', help='Output file.')
+    subparser.add_argument('infiles', nargs='+', help='Input files as either a single text file (must be .txt), multiple text files (specify with glob (i.e. myfolder/*.txt), or a spreadsheet (.csv, .xls, .xlsx) with document name "--doclabel" and text data "--textcol" column names.')
+    subparser.add_argument('outfile', help='Output spreadsheet. Should end in .xls or .h5 depending on desired format. If command output is too large to be an excel spreadsheet, will save to hdf unless "--nohdfonfail" flag is used.')
 
     subparser.add_argument('-dn','--doclabelcol', type=str, required=False, help='Column name for document title/id.')
     subparser.add_argument('-c','--textcol', type=str, default='text', help='Column name of text data (if excel file provided).')
