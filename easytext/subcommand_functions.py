@@ -4,6 +4,7 @@ import pandas as pd
 import spacy
 from collections import Counter
 from argparse import ArgumentParser
+import numpy as np
 
 from .algorithms import glove, lda, nmf
 from .reports import write_report, make_human_report, make_summary
@@ -269,70 +270,91 @@ def subcommand_glove(texts, docnames, args):
     return final_fname
 
 
-'''
-
-parent_parser -> master_parser
-main_parser -> grammar_parser
-service_subparsers -> grammar_subparsers
-
-
-parent_parser
-    main_parser
-        service_subparsers
-        service_parser
-            action_subparser
-
-
-parser -> main_parser
-subparsers -> main_subparsers
-
-sum_parser -> grammar_parser
-sum_subparser -> grammar_subparser
-
-main_parser
-main_subparsers
-    -> grammar_parser
-    -> multi_parser
-
-main_parser = argparse.ArgumentParser()
-main_parser.add_argument('-i', '--stdin', action='store_true')
-
-main_subparsers = main_parser.add_subparsers(dest='func')
-
-grammar_parser = main_subparsers.add_parser('grammar')
-grammar_parser.add_argument('numbers', type=int, nargs='*')
-
-mult_parser = main_subparsers.add_parser('mult')
-mult_parser.add_argument('numbers', type=int, nargs='*')
-'''
-
-
+def add_common_grammar_args(parser):
+    parser.add_argument('-m','--min_tf', type=int, default=1, help='Min phrase count to include.')
+    parser.add_argument('-hr','--human-readable', action='store_true', help='Produce human readable output.')
 
 def subcommand_grammar_args(main_parser, main_subparsers):
-    grammar_parser = main_subparsers.add_parser('grammar', help='Run grammatical expression extraction.')
+    #newp = main_subparsers.add_parser('grammar', help='Extract grammatical relationships.')
+    #common_args(newp)
+    #newp.add_argument('-m','--min_tf', type=int, default=1, help='Min phrase count to include.')
+    #
+    
+    grammar_parser = main_subparsers.add_parser('grammar', help='Grammatical relations: noun phrases, noun-verbs, entity-verbs, prepositional phrases}.')
     grammar_subparsers = grammar_parser.add_subparsers(title='grammar', dest='grammar_command')
     grammar_subparsers.required = True
     
     # noun phrases
     np_parser = grammar_subparsers.add_parser('nounphrases', help='Extract noun phrases.',)
     common_args(np_parser)
-    np_parser.add_argument('-m','--min_tf', type=int, default=1, help='Min phrase count to include.')
+    add_common_grammar_args(np_parser)
+    
     
     # noun - verb pairs
     nv_parser = grammar_subparsers.add_parser('nounverbs', help='Extract noun-verb pairs.',)
     common_args(nv_parser)
-    nv_parser.add_argument('-m','--min_tf', type=int, default=1, help='Min phrase count to include.')
+    add_common_grammar_args(nv_parser)
+    
     
     # entity - verb pairs
     ev_parser = grammar_subparsers.add_parser('entverbs', help='Extract entity-verb pairs.',)
     common_args(ev_parser)
-    ev_parser.add_argument('-m','--min_tf', type=int, default=1, help='Min phrase count to include.')
+    add_common_grammar_args(ev_parser)
     
-
+    
+    # prepositional phrases
+    prep_parser = grammar_subparsers.add_parser('prepositions', help='Extract prepositional phrases.',)
+    common_args(prep_parser)
+    add_common_grammar_args(prep_parser)
+    
+    
 def subcommand_grammar(texts, docnames, args):
+    assert(args.min_tf > 0)
+    
+    nlp = spacy.load('en')
 
-    return 'shit.xlsx'
+    #args.grammar_command is from {nounphrases, nounverbs, entverbs, prepositions}
+    property_counts = {
+        'nounphrases':'nounphrasecounts',
+        'nounverbs':'nounverbcounts',
+        'entverbs':'entverbcts',
+        'prepositions':'prepphrasecounts',
+    }
+    
+    # parse texts using spacy
+    print('Extracting grammatical properties from', len(texts), 'texts.')
+    counts = list()
+    for pw in easyparse(nlp,texts,enable=[args.grammar_command,]):
+        ct_property = property_counts[args.grammar_command]
+        counts.append({str(k).strip():v for k,v in pw[ct_property].items()})
+        
+            
+    # build output sheets
+    df = pd.DataFrame(counts,index=docnames,dtype=np.int32)
+    df[pd.isnull(df)] = 0
+    
+    if args.min_tf > 1:
+        col_satisfies = df.sum(axis=0) > args.min_tf
+        df = df.loc[:,col_satisfies]
+    
+    if df.shape[1] > 0:
+        sheet_name = args.grammar_command
+        if args.human_readable:
+            df = make_human_report(df)
+            sheets = ((sheet_name + '_human', df),)
+        else:
+            sheets = ((sheet_name, df),)
 
+        # actually write report
+        final_fname = write_report(
+            args.outfile, 
+            sheets, 
+            hdf_if_fail=not args.nohdfonfail and not args.human_readable, 
+            verbose=True,
+        )
+        return final_fname
+    else:
+        print('ERROR! No relations were found that meet the --min_tf criteria.')
 
 all_subcommands = {
     'wordcount':{'argparser':subcommand_wordcount_args, 'command':subcommand_wordcount},

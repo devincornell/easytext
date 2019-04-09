@@ -34,6 +34,23 @@ python -m easytext entities tmp/*.txt testoutput/ent_usetypes.xlsx --min_tf 10 -
 python -m easytext entities tmp/*.txt testoutput/ent_usetypes.xlsx --min_tf 10 --ignore-types "PERSON,NORP"
 
 
+# gramattical features
+python -m easytext grammar nounphrases tmp/*.txt testoutput/grammar_nounphrases.xlsx --min_tf 10
+
+python -m easytext grammar nounphrases tmp/*.txt testoutput/grammar_nounphrases_human.xlsx --min_tf 10 -hr
+
+python -m easytext grammar nounverbs tmp/*.txt testoutput/grammar_nounverbs.xlsx --min_tf 10
+
+python -m easytext grammar nounverbs tmp/*.txt testoutput/grammar_nounverbs_human.xlsx --min_tf 10 -hr
+
+python -m easytext grammar entverbs tmp/*.txt testoutput/grammar_entverbs.xlsx --min_tf 10
+
+python -m easytext grammar entverbs tmp/*.txt testoutput/grammar_entverbs_human.xlsx --min_tf 10 -hr
+
+python -m easytext grammar prepositions tmp/*.txt testoutput/grammar_prepositions.xlsx --min_tf 10
+
+python -m easytext grammar prepositions tmp/*.txt testoutput/grammar_prepositions_human.xlsx --min_tf 10 -hr
+
 # topic model with lda
 python -m easytext topicmodel tmp/*.txt testoutput/lda_10.xlsx -n 10
 

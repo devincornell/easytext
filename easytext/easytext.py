@@ -12,8 +12,8 @@ import string
 ALL_COMPONENTS = {
     'wordlist':{'comp':ExtractWordListPipeline,'dep':[]},
     'sentlist':{'comp':ExtractSentListPipeline,'dep':[]},
-    'prepositions':{'comp':ExtractPrepositionsPipeline,'dep':[]},
     'entlist':{'comp':ExtractEntListPipeline, 'dep':[]},
+    'prepositions':{'comp':ExtractPrepositionsPipeline,'dep':[]},
     'nounverbs':{'comp':ExtractNounVerbsPipeline, 'dep':[]},
     'entverbs':{'comp':ExtractEntVerbsPipeline, 'dep':['entlist',]},
     'nounphrases':{'comp':ExtractNounPhrasesPipeline, 'dep':[]},

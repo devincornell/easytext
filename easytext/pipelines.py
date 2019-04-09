@@ -43,6 +43,7 @@ class ExtractWordListPipeline():
         wordlist = [self.usetext(t) for t in doc if use_token(t)]
         
         doc._.easytext['wordlist'] = wordlist
+        doc._.easytext['wordcounts'] = dict(Counter(wordlist))
         
         return doc
     
@@ -74,6 +75,72 @@ class ExtractSentListPipeline():
         doc._.easytext['sentlist'] = sentlist
         
         return doc
+
+# --------------------------------- MOSTLY NER FOCUSED -----------------------------------
+    
+def get_basetext(etext):
+    # (i.e. combine "US" with "U.S.")
+    rmpunc_table = etext.maketrans('','', string.punctuation)
+    rmpunct = etext.translate(rmpunc_table)
+    basetext = rmpunct.upper().replace(' ','')
+    return basetext
+
+class ExtractEntListPipeline():
+    #name = 'easytext-entlist'
+    def __init__(self, nlp, kwargs):
+        
+        self.use_ent_types = kwargs['use_ent_types']
+        self.ignore_ent_types = kwargs['ignore_ent_types']
+        
+        self.entmap = dict() # basetext -> list(entnames)
+        
+        # these will be set by spacy in the pipeline
+        if not Doc.has_extension('easytext'):
+            Doc.set_extension('easytext', default=dict())        
+
+    
+    def __call__(self, doc):
+        
+        # merge multi-word entities
+        spans = list(doc.ents)
+        for span in spans:
+            span.merge()
+
+        # extract entities that meet conditions
+        is_ent = lambda e: e.ent_type > 0 and len(e.text.strip()) > 0
+        if self.use_ent_types is None and self.ignore_ent_types is None:
+            ents = [e for e in doc if is_ent(e)]
+        elif self.use_ent_types is not None:
+            ents = [e for e in doc if is_ent(e) and e.ent_type_ in self.use_ent_types]
+        elif self.ignore_ent_types is not None:
+            ents = [e for e in doc if is_ent(e) and e.ent_type_ not in self.ignore_ent_types]
+        else:
+            raise Exception('shoot - logical error here')
+        
+        # combine entities if they have same basetext
+        entdat = list()
+        for ent in ents:
+            basetext = get_basetext(ent.text)
+            
+            if basetext not in self.entmap.keys():
+                self.entmap[basetext] = [ent.text,]
+            
+            elif ent.text not in self.entmap[basetext]:
+                self.entmap[basetext].append(ent.text)
+                
+            entdat.append( (self.entmap[basetext][0],ent) )
+            
+        # count entities in this list
+        entcts = dict(Counter([n for n,e in entdat]))
+        
+        # set properties into pipeline
+        doc._.easytext['entlist'] = entdat
+        doc._.easytext['entmap'] = self.entmap
+        doc._.easytext['entcts'] = entcts
+        
+        return doc
+    
+# ------------------------------- GRAMMAR FOCUSED PIPELINES ------------------------------
 
 class ExtractPrepositionsPipeline():
     #name = 'easytext-prepositions'
@@ -145,7 +212,7 @@ class ExtractEntVerbsPipeline():
             Doc.set_extension('easytext', default=dict())
         
         if not 'easytext-entlist' in nlp.pipe_names:
-            component = ExtractEntListPipeline(nlp)
+            component = ExtractEntListPipeline(nlp,kwargs)
             nlp.add_pipe(component,last=True)
             
     def __call__(self, doc):
@@ -159,74 +226,13 @@ class ExtractEntVerbsPipeline():
         for ename, eobj in doc._.easytext['entlist']:
             nv = get_nounverb(eobj)
             if nv is not None:
-                entverbs.append((nv[0].text, nv[1].text))
+                entverbs.append((nv[0].text.strip(), nv[1].text.strip()))
         
         doc._.easytext['entverbs'] = entverbs
         doc._.easytext['entverbcts'] = dict(Counter(entverbs))
         
         return doc
     
-    
-def get_basetext(etext):
-    # (i.e. combine "US" with "U.S.")
-    rmpunc_table = etext.maketrans('','', string.punctuation)
-    rmpunct = etext.translate(rmpunc_table)
-    basetext = rmpunct.upper().replace(' ','')
-    return basetext
-
-class ExtractEntListPipeline():
-    #name = 'easytext-entlist'
-    def __init__(self, nlp, kwargs):
-        
-        self.use_ent_types = kwargs['use_ent_types']
-        self.ignore_ent_types = kwargs['ignore_ent_types']
-        
-        self.entmap = dict() # basetext -> list(entnames)
-        
-        # these will be set by spacy in the pipeline
-        if not Doc.has_extension('easytext'):
-            Doc.set_extension('easytext', default=dict())        
-
-    def __call__(self, doc):
-        
-        # merge multi-word entities
-        spans = list(doc.ents)
-        for span in spans:
-            span.merge()
-
-        # extract entities that meet conditions
-        is_ent = lambda e: e.ent_type > 0 and len(e.text.strip()) > 0
-        if self.use_ent_types is None and self.ignore_ent_types is None:
-            ents = [e for e in doc if is_ent(e)]
-        elif self.use_ent_types is not None:
-            ents = [e for e in doc if is_ent(e) and e.ent_type_ in self.use_ent_types]
-        elif self.ignore_ent_types is not None:
-            ents = [e for e in doc if is_ent(e) and e.ent_type_ not in self.ignore_ent_types]
-        else:
-            raise Exception('shoot - logical error here')
-        
-        # combine entities if they have same basetext
-        entdat = list()
-        for ent in ents:
-            basetext = get_basetext(ent.text)
-            
-            if basetext not in self.entmap.keys():
-                self.entmap[basetext] = [ent.text,]
-            
-            elif ent.text not in self.entmap[basetext]:
-                self.entmap[basetext].append(ent.text)
-                
-            entdat.append( (self.entmap[basetext][0],ent) )
-            
-        # count entities in this list
-        entcts = dict(Counter([n for n,e in entdat]))
-        
-        # set properties into pipeline
-        doc._.easytext['entlist'] = entdat
-        doc._.easytext['entmap'] = self.entmap
-        doc._.easytext['entcts'] = entcts
-        
-        return doc
     
 
 
@@ -240,10 +246,13 @@ class ExtractNounPhrasesPipeline():
     def __call__(self, doc):
         
         nounphrases = list()
-        for np in doc.noun_chunks:
-            nounphrases.append(np.text)
+        for nounphrase in doc.noun_chunks:
+            #np_text = ' '.join(nounphrase)
+            nounphrases.append(nounphrase.text.strip().lower())
         
         doc._.easytext['nounphrasecounts'] = dict(Counter(nounphrases))
         doc._.easytext['nounphrases'] = nounphrases
         
         return doc
+
+    
