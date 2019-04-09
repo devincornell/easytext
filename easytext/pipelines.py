@@ -227,3 +227,23 @@ class ExtractEntListPipeline():
         doc._.easytext['entcts'] = entcts
         
         return doc
+    
+
+
+class ExtractNounPhrasesPipeline():
+    #name = 'easytext-prepositions'
+    def __init__(self,nlp, kwargs):
+        
+        if not Doc.has_extension('easytext'):
+            Doc.set_extension('easytext', default=dict())
+            
+    def __call__(self, doc):
+        
+        nounphrases = list()
+        for np in doc.noun_chunks:
+            nounphrases.append(np.text)
+        
+        doc._.easytext['nounphrasecounts'] = dict(Counter(nounphrases))
+        doc._.easytext['nounphrases'] = nounphrases
+        
+        return doc

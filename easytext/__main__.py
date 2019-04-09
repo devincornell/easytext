@@ -3,73 +3,21 @@ from glob import glob
 from argparse import ArgumentParser
 
 from .fileio import read_input_files
-from .subcommand_functions import *
+from .subcommand_functions import all_subcommands
 
 
-def make_parser():
+def make_parser(subcommands):
     # example: python -m easytextanalysis --sentiment --topicmodel --prepphrases texts/* output.csv
-    parser = ArgumentParser()
+    main_parser = ArgumentParser()
     
-    subparsers = parser.add_subparsers(dest='command')
-    subparsers.required = True
+    main_subparsers = main_parser.add_subparsers(dest='command')
+    main_subparsers.required = True
     
-    def add_to_subparser(subparser):
-        subparser.add_argument('infiles', nargs='+', help='Input files.')
-        subparser.add_argument('outfile', help='Output file.')
-        
-        subparser.add_argument('-dn','--doclabelcol', type=str, required=False, help='Column name for document title/id.')
-        subparser.add_argument('-c','--textcol', type=str, default='text', help='Column name of text data (if excel file provided).')
-        
-        subparser.add_argument('-nhd','--nohdfonfail', action='store_true', help='Don\'t write hdf if the data is too big for excel.')
-    
-    # create the parser for word counts
-    wparser = subparsers.add_parser('wordcount', help='Word count across corpus, either by (a) manually selecting words to count or (b) selecting a minimum frequency of words to count.')
-    add_to_subparser(wparser)
-    wparser.add_argument('-w','--words', type=str, help='Comma-separated words to count in each document. Each word will be a column. i.e. "word1,word2" to count just two words.')
-    wparser.add_argument('-m','--min_tf', type=int, default=1, help='Count all words that appear a minimum of min_tf times in corpus. Warning: could lead to really large & sparse output files.')
-    wparser.add_argument('-hr','--human-readable', action='store_true', help='Organize output to be read by humans.')
-    
-    # parser for sentiment analysis
-    sparser = subparsers.add_parser('sentiment', help='Compute sentiment analysis on corpus using Stanford empath.')
-    add_to_subparser(sparser)
-    sparser.add_argument('-o','--posneg-only', action='store_true', help='Include only positive and negative emotion categories.')
-    sparser.add_argument('-n','--no-normalize', action='store_true', help='Don\'t normalize counts by document length.')
-    sparser.add_argument('-hr','--human-readable', action='store_true', help='Organize output to be read by humans.')
-    
-    
-    # parser for entity extraction
-    eparser = subparsers.add_parser('entities', help='Run Spacy Named Entity Recognition (NER).')
-    add_to_subparser(eparser)
-    eparser.add_argument('-m','--min_tf', type=int, default=1, help='Minimum number of total entity occurrences to include in the model.')
-    eparser.add_argument('-hr','--human-readable', action='store_true', help='Organize output to be read by humans.')
-    eparser.add_argument('-ut','--use-types', type=str, help='Entity types to use. Format: "etype1,etype2".')
-    eparser.add_argument('-it','--ignore-types', type=str, help='Entity types to ignore. Format: "etype1,etype2".')
-    
-    
-    # create the parser for topic modeling arguments
-    tmparser = subparsers.add_parser('topicmodel', help='Run topic modeling algorithms (LDA or NMF).')
-    add_to_subparser(tmparser)
-    tmparser.add_argument('-n', '--numtopics', type=int, required=True, help='Numer of topics.')
-    tmparser.add_argument('-t','--type', type=str, default='lda', help="From ('lda','nmf') choose algorithm.")
-    tmparser.add_argument('-s','--seed', type=int, default=0, help='Seed to be used to init topic model.')
-    tmparser.add_argument('-m','--min_tf', type=int, default=0, help='Seed to be used to init topic model.')
-    tmparser.add_argument('-nswm','--nosave_wordmatrix', action='store_true', help='Don\'t save word matrix in excel (helps to make smaller files).')
-    
-    # create parser for glove
-    gparser = subparsers.add_parser('glove', help='Run glove algorithm.')
-    add_to_subparser(gparser)
-    gparser.add_argument('-d', '--dimensions', type=int, required=True, help='Numer of embedding dimensions.')
-    gparser.add_argument('-kw','--keywords', type=str, help='Keywords orient embedding dimensions. Format: "word1,word2|word3", where vector dimension 1 is "word1" + "word2", and dimension 2 is the vector "word3" rejected from dimension 1.')
-    gparser.add_argument('-m','--min_tf', type=int, default=0, help='Minimum number of word occurrences to include in the model.')
-    gparser.add_argument('-nswm','--nosave_wordmatrix', action='store_true', help='Don\'t save word matrix in excel (helps to make smaller files).')
-    
-    # parser for entity peace
-    grparser = subparsers.add_parser('grammar', help='Run grammatical expression extraction.')
-    add_to_subparser(grparser)
-    grparser.add_argument('-v','--entverbs', action='store_true', help='T/F include entity-verb detection?')
-    grparser.add_argument('-n','--nounverbs', action='store_true', help='T/F include noun-verb detection?')
+    # add all subcommands to parser
+    for command,funcs in subcommands.items():
+        funcs['argparser'](main_parser,main_subparsers)
 
-    return parser
+    return main_parser
 
 
 
@@ -86,7 +34,8 @@ def parse_keywords(kw):
 if __name__ == '__main__':
     
     # parse input according to defined parser
-    parser = make_parser()
+    #parser = make_parser()
+    parser = make_parser(all_subcommands)
     args = parser.parse_args()
     
     # get parsed documents
@@ -99,34 +48,14 @@ if __name__ == '__main__':
     
     
     # COMMAND FUNCTIONALITY MOSTLY IN subcommand_functions file
-    nlp = spacy.load('en')
-    
-    if args.command == 'wordcount':
-        final_name = subcommand_wordcount(texts, docnames, args)
-        print('saved wordcount result as', final_fname)
+    if args.command not in all_subcommands.keys():
+        # parser should handle invalid commands, but just in case.
+        raise Exception('Your subcommand was not recognized!')
         
-    elif args.command == 'sentiment':
-        final_name = subcommand_sentiment(texts, docnames, args)
-        print('saved wordcount result as', final_fname)
-    
-    elif args.command == 'entities':
-        final_name = subcommand_entities(texts, docnames, args)
-        print('saved result as', final_fname)
         
-    elif args.command == 'topicmodel':
-        final_name = subcommand_topicmodel(texts, docnames, args)
-        print('saved result as', final_fname)
-        
-    elif args.command == 'glove':
-        final_name = subcommand_glove(texts, docnames, args)
-        print('saved result as', final_fname)
-
-    elif args.command == 'grammar':
-        pass
-    
-    else:
-        # note: parser gaurantees that one of these options would be set
-        raise Exception('Weird error - the command {} hasn\'t been implemented.'.format(args.command))
+    # envoke the appropriate subcommand functions
+    final_fname = all_subcommands[args.command]['command'](texts, docnames, args)
+    print('saved', args.command, 'result as', final_fname)
 
 
     

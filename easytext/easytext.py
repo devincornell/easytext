@@ -16,6 +16,7 @@ ALL_COMPONENTS = {
     'entlist':{'comp':ExtractEntListPipeline, 'dep':[]},
     'nounverbs':{'comp':ExtractNounVerbsPipeline, 'dep':[]},
     'entverbs':{'comp':ExtractEntVerbsPipeline, 'dep':['entlist',]},
+    'nounphrases':{'comp':ExtractNounPhrasesPipeline, 'dep':[]},
 }
 
 DEFAULT_PIPE_ARGS = dict(use_ents=True, use_ent_types=None, ignore_ent_types=None) # defaults that can be written over
