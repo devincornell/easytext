@@ -25,13 +25,13 @@ for etdoc in easyparse(nlp, texts, enable=components):
 
 The full list of preprocessing components is provided below. Each component has an associated output variable of the same name that will be contained in the document object output from the `easyparse()` function.
 
-**wordlist**: Extracts a list of tokens, including words and punctuation, that appear in the document.
-**sentlist**: Contains a list of sentence token lists that appear in the document.
-**entlist**: Contains a list of named entities observed in the document. Named entities are combined if they have the same representation after changing to lower case and removing whitespace.
-**prepphrases**: List of prepositional phrases found in the document.
-**nounverbs**: List of (noun, verb) pair tuples found in the document.
-**entverbs**: List of (entity, verb) pair tuples found in the document.
-**nounphrases**: List of nouns and noun phrases found in the document.
+* **wordlist**: Extracts a list of tokens, including words and punctuation, that appear in the document.
+* **sentlist**: Contains a list of sentence token lists that appear in the document.
+* **entlist**: Contains a list of named entities observed in the document. Named entities are combined if they have the same representation after changing to lower case and removing whitespace.
+* **prepphrases**: List of prepositional phrases found in the document.
+* **nounverbs**: List of (noun, verb) pair tuples found in the document.
+* **entverbs**: List of (entity, verb) pair tuples found in the document.
+* **nounphrases**: List of nouns and noun phrases found in the document.
 
 ## Features
 
