@@ -2,10 +2,9 @@
 # this shell script is for testing different combinations of commands in __main__.py
 # NOTE: easytext should be installed before using this command
 
-
 mkdir testoutput
 
-python example_dumpnewsgroup20.py 100
+python example_dumpnewsgroup20.py textfiles 100
 
 
 # word count
@@ -47,9 +46,9 @@ python -m easytext grammar entverbs tmp/*.txt testoutput/grammar_entverbs.xlsx -
 
 python -m easytext grammar entverbs tmp/*.txt testoutput/grammar_entverbs_human.xlsx --min_tf 10 -hr
 
-python -m easytext grammar prepositions tmp/*.txt testoutput/grammar_prepositions.xlsx --min_tf 10
+python -m easytext grammar prepphrases tmp/*.txt testoutput/grammar_prepositions.xlsx --min_tf 10
 
-python -m easytext grammar prepositions tmp/*.txt testoutput/grammar_prepositions_human.xlsx --min_tf 10 -hr
+python -m easytext grammar prepphrases tmp/*.txt testoutput/grammar_prepositions_human.xlsx --min_tf 10 -hr
 
 # topic model with lda
 python -m easytext topicmodel tmp/*.txt testoutput/lda_10.xlsx -n 10
