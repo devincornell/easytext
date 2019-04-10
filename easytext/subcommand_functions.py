@@ -359,14 +359,6 @@ def subcommand_grammar(texts, docnames, args):
     else:
         print('ERROR! No relations were found that meet the --min_tf criteria.')
 
-all_subcommands = {
-    'wordcount':{'argparser':subcommand_wordcount_args, 'command':subcommand_wordcount},
-    'sentiment':{'argparser':subcommand_sentiment_args, 'command':subcommand_sentiment},
-    'entities':{'argparser':subcommand_entities_args, 'command':subcommand_entities},
-    'topicmodel':{'argparser':subcommand_topicmodel_args, 'command':subcommand_topicmodel},
-    'glove':{'argparser':subcommand_glove_args, 'command':subcommand_glove},
-    'grammar':{'argparser':subcommand_grammar_args, 'command':subcommand_grammar},
-}
 
 
 

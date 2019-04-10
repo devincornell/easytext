@@ -3,7 +3,18 @@ from glob import glob
 from argparse import ArgumentParser
 
 from .fileio import read_input_files
-from .subcommand_functions import all_subcommands
+
+# store all subcommands
+from .subcommand_functions import *
+all_subcommands = {
+    'wordcount':{'argparser':subcommand_wordcount_args, 'command':subcommand_wordcount},
+    'sentiment':{'argparser':subcommand_sentiment_args, 'command':subcommand_sentiment},
+    'entities':{'argparser':subcommand_entities_args, 'command':subcommand_entities},
+    'topicmodel':{'argparser':subcommand_topicmodel_args, 'command':subcommand_topicmodel},
+    'glove':{'argparser':subcommand_glove_args, 'command':subcommand_glove},
+    'grammar':{'argparser':subcommand_grammar_args, 'command':subcommand_grammar},
+}
+
 
 
 def make_parser(subcommands):
