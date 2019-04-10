@@ -13,12 +13,13 @@ ALL_COMPONENTS = {
     'wordlist':{'comp':ExtractWordListPipeline,'dep':[]},
     'sentlist':{'comp':ExtractSentListPipeline,'dep':[]},
     'entlist':{'comp':ExtractEntListPipeline, 'dep':[]},
-    'prepositions':{'comp':ExtractPrepositionsPipeline,'dep':[]},
+    'prepphrases':{'comp':ExtractPrepositionsPipeline,'dep':[]},
     'nounverbs':{'comp':ExtractNounVerbsPipeline, 'dep':[]},
     'entverbs':{'comp':ExtractEntVerbsPipeline, 'dep':['entlist',]},
     'nounphrases':{'comp':ExtractNounPhrasesPipeline, 'dep':[]},
 }
 
+# default args are consumed in pipeline components
 DEFAULT_PIPE_ARGS = dict(use_ents=True, use_ent_types=None, ignore_ent_types=None) # defaults that can be written over
 def easyparse(nlp,texts,enable=None,pipeargs=dict(),spacyargs=dict()):
     '''
@@ -32,8 +33,9 @@ def easyparse(nlp,texts,enable=None,pipeargs=dict(),spacyargs=dict()):
             nlp: Spacy nlp objects, usually init by nlp = spacy.load('en')
             texts: iterable of raw text data as strings
             enable: list of pipeline components to use. Each component enables
-                some data in the generated outputs, usually corresponding to 
-                the same name as the component itself.
+                some data in the generated outputs, always corresponding to 
+                the same name as the component itself (but sometimes the pipe 
+                outputs include additional properties.
             pipeargs: Dictionary corresponding to arguments passed to pipeline
                 components. Pipearg key->values might apply to one or more pipeline 
                 component. For instance, the 'use_ents' flag combines multi-word 
@@ -65,6 +67,21 @@ def easyparse(nlp,texts,enable=None,pipeargs=dict(),spacyargs=dict()):
 
 class EasyTextPipeline():
     name = 'easytext'
+    '''
+        Master pipeline that combines all EasyText pipeline components
+            listed in ALL_COMPONENTS and defined in pipelines.py.
+        Output: None. Attaches the property spacy doc._.easytext to
+            all spacy doc objects.
+        
+        Inputs:
+            nlp: spacy nlp object, usually initalized using 
+                nlp = spacy.load('en')
+            enable: Enabled pipeline components. Default is to
+                include all pipeline components.
+            disable: Pipeline components not to include.
+            pipeargs: pipeline args passed to each of the individ.
+                pipeline components found in pipelines.py.
+    '''
     def __init__(self, nlp, enable=None, disable=None, pipeargs=dict()):
         pipeargs = {**DEFAULT_PIPE_ARGS, **pipeargs} # allows user to override defaults
         
