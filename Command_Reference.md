@@ -1,8 +1,8 @@
 # EasyText Command Line Guide
 
-This guide covers the command line interface for the EasyText package. For the EasyText documentation overview, view the [README.md](https://github.com/devincornell/easytext/blob/master/README.md) page. This interface allows users to issue a single command to read in text data as a spreadsheet column or list of text files, parse it using spacy, and output the result in another results spreadsheet. Almost all of the EasyText interface is available through these commands, and the interface is organized through a series of subcommands which are explained below.
+This guide covers the command line interface for the EasyText package. For the EasyText documentation overview, view the [README.md](/README.md) page. This interface allows users to issue a single command to read in text data as a spreadsheet column or list of text files, parse it using spacy, and output the result in another results spreadsheet. Almost all of the EasyText interface is available through these commands, and the interface is organized through a series of subcommands which are explained below.
 
-For a broader overview of EasyText package functionality, see the main [README.md](https://github.com/devincornell/easytext/blob/master/README.md).
+For a broader overview of EasyText package functionality, see the main [README.md](/README.md).
 
 Once installed, the easytext command line interface can be accessed through the system command "python -m easytext". To get details of the available commands, issue the help flag like this: "python -m easytext --help".
 
