@@ -1,8 +1,8 @@
 # EasyText Command Line Guide
 
-This guide covers the command line interface for the EasyText package. For the EasyText documentation overview, view the [README.md](https://github.com/devincornell/easytext/blob/master/README.md) page. This interface allows users to issue a single command to read in text data as a spreadsheet column or list of text files, parse it using spacy, and output the result in another results spreadsheet. Almost all of the EasyText interface is available through these commands, and the interface is organized through a series of subcommands which are explained below.
+This guide covers the command line interface for the EasyText package. For the EasyText documentation overview, view the [README.md](/README.md) page. This interface allows users to issue a single command to read in text data as a spreadsheet column or list of text files, parse it using spacy, and output the result in another results spreadsheet. Almost all of the EasyText interface is available through these commands, and the interface is organized through a series of subcommands which are explained below.
 
-For a broader overview of EasyText package functionality, see the main [README.md](https://github.com/devincornell/easytext/blob/master/README.md).
+For a broader overview of EasyText package functionality, see the main [README.md](/README.md).
 
 Once installed, the easytext command line interface can be accessed through the system command "python -m easytext". To get details of the available commands, issue the help flag like this: "python -m easytext --help".
 
@@ -148,6 +148,31 @@ optional arguments:
   -it IGNORE_TYPES, --ignore-types IGNORE_TYPES
                         Entity types to ignore. Format: "etype1,etype2".
 ```
+
+A basic list of entity types is given below. For full documentation, see the [Spacy NER Annotation Specification page](https://spacy.io/api/annotation#named-entities).
+
+```
+TYPE	DESCRIPTION
+PERSON	People, including fictional.
+NORP	Nationalities or religious or political groups.
+FAC	Buildings, airports, highways, bridges, etc.
+ORG	Companies, agencies, institutions, etc.
+GPE	Countries, cities, states.
+LOC	Non-GPE locations, mountain ranges, bodies of water.
+PRODUCT	Objects, vehicles, foods, etc. (Not services.)
+EVENT	Named hurricanes, battles, wars, sports events, etc.
+WORK_OF_ART	Titles of books, songs, etc.
+LAW	Named documents made into laws.
+LANGUAGE	Any named language.
+DATE	Absolute or relative dates or periods.
+TIME	Times smaller than a day.
+PERCENT	Percentage, including ”%“.
+MONEY	Monetary values, including unit.
+QUANTITY	Measurements, as of weight or distance.
+ORDINAL	“first”, “second”, etc.
+CARDINAL	Numerals that do not fall under another type.
+```
+
 
 ### Topic Modeling Subcommand
 
