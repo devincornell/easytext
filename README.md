@@ -32,3 +32,32 @@ The full list of preprocessing components is provided below. Each component has 
 * **nounverbs**: List of (noun, verb) pair tuples found in the document.
 * **entverbs**: List of (entity, verb) pair tuples found in the document.
 * **nounphrases**: List of nouns and noun phrases found in the document.
+
+## Algorithm Wrapper Functions
+
+In addition to convenient preprocessing commands, EasyText offers a series of algorithms that follow a typical form but wrap algorithms from multiple packages. These algorithms all return document representations either in terms of topic distributions or embedding vector representations.
+
+* **lda**: Implements a wrapper around sklearn LatentDirichletAllocation algorithm.
+* **nmf**: Implements a wrapper around sklearn NMF algorithm.
+* **glove**: Implements wrapper around python-glove package for creating word embeddings.
+
+The following code uses the lda function with the `easytext()` preprocessor to generate a topic model with 10 topics.
+
+```
+from easytext import easyparse
+
+texts # list of strings containing the texts of interest
+
+# preprocess documents into bags of words
+components = ['wordlist',]
+nlp = spacy.load('en')
+docbows = list()
+for etdoc in easyparse(nlp, texts, enable=components):
+  docbows.append(etdoc['wordlist'])
+
+# create topic model
+topicmodel = lda(docbows, 10)
+
+# print topics most closely associated with each document
+print(topicmodel.doc_feature_summary(topn=5))
+```
