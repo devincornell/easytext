@@ -140,7 +140,11 @@ def glove(docsents, n_dim, random_state=0, min_tf=1, docnames=None, keywords=Non
             docnames: document names that will appear in DocModel
                 for convenience.
             keywords: list of lists of words that will form the basis of a 
-                hyper-rotated version of a new embedding model.
+                hyper-rotated version of a new embedding model. The list 
+                [['hat','dog'],['cat',]] would orient the first (arbitrary)
+                dimension of the vector space to hat + dog, and the second 
+                to the vector for cat minus the component in hat + dog to 
+                preserve orthogonality.
             **kwargs: other keyword arguments fed directly into the 
                 sklearn NMF function.
     '''
