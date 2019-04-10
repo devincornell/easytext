@@ -23,6 +23,27 @@ DEFAULT_PIPE_ARGS = dict(use_ents=True, use_ent_types=None, ignore_ent_types=Non
 def easyparse(nlp,texts,enable=None,pipeargs=dict(),spacyargs=dict()):
     '''
         Runs spacy parser loop only extracting data from enabled custom modules.
+        
+        Output: Generator for each parsed document. Enabled features correspond to 
+            dictionary keys here. For instance, if enable=['wordlist',],
+            the generator output will add a key called 'wordlist'.
+        
+        Inputs:
+            nlp: Spacy nlp objects, usually init by nlp = spacy.load('en')
+            texts: iterable of raw text data as strings
+            enable: list of pipeline components to use. Each component enables
+                some data in the generated outputs, usually corresponding to 
+                the same name as the component itself.
+            pipeargs: Dictionary corresponding to arguments passed to pipeline
+                components. Pipearg key->values might apply to one or more pipeline 
+                component. For instance, the 'use_ents' flag combines multi-word 
+                entities to both word lists and sent lists. See documentation for
+                individual pipeline components to see the pipeargs used. Defaults
+                are listed in the DEFAULT_PIPE_ARGS found above this fuction 
+                definition.
+            spacyargs: Arguments that, when unpacked, will be pased directly to 
+                the spacy.pipe() method.
+            
     '''
     pipeargs = {**DEFAULT_PIPE_ARGS, **pipeargs} # allows user to override defaults
     
