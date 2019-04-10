@@ -1,6 +1,6 @@
 # EasyText Command Line Guide
 
-This guide covers the command line interface for the EasyText package. This interface allows users to issue a single command to read in text data as a spreadsheet column or list of text files, parse it using spacy, and output the result in another results spreadsheet. Almost all of the EasyText interface is available through these commands, and the interface is organized through a series of subcommands which are explained below.
+This guide covers the command line interface for the EasyText package. For the EasyText documentation overview, view the [README.md](https://github.com/devincornell/easytext/blob/master/README.md) page. This interface allows users to issue a single command to read in text data as a spreadsheet column or list of text files, parse it using spacy, and output the result in another results spreadsheet. Almost all of the EasyText interface is available through these commands, and the interface is organized through a series of subcommands which are explained below.
 
 For a broader overview of EasyText package functionality, see the main [README.md](https://github.com/devincornell/easytext/blob/master/README.md).
 
@@ -173,9 +173,66 @@ optional arguments:
 
 ### GloVe Algorithm Subcommand
 
+The glove algorithm subcommand allows the user to construct a glove model on the corpus, assigning vectors to both words and documents through (see details in the [`transform_paragraph` function of the python-glove package](https://github.com/maciejkula/glove-python/blob/master/glove/glove.py)). Users can specify the number of embedding dimensions, keywords around which to orient the embedding space (very experimental), and use the `-nswm` flag to omit the word vector data from the final spreadsheet (wich can always be gathered upon anothe run of the command).
+
+```
+usage: __main__.py glove [-h] [-dn DOCLABELCOL] [-c TEXTCOL] [-nhd] -d
+                         DIMENSIONS [-kw KEYWORDS] [-m MIN_TF] [-nswm]
+                         infiles [infiles ...] outfile
+
+optional arguments:
+  -d DIMENSIONS, --dimensions DIMENSIONS
+                        Numer of embedding dimensions.
+  -kw KEYWORDS, --keywords KEYWORDS
+                        Keywords orient embedding dimensions. Format:
+                        "word1,word2|word3", where vector dimension 1 is
+                        "word1" + "word2", and dimension 2 is the vector
+                        "word3" rejected from dimension 1.
+  -m MIN_TF, --min_tf MIN_TF
+                        Minimum number of word occurrences to include in the
+                        model.
+  -nswm, --nosave_wordmatrix
+                        Don't save word matrix in excel (helps to make smaller
+                        files).
+
+```
+
+
 ### Grammar Subcommand
 
+The Grammar subcommand, unlike others, is also organized into a series of subcommands. The subcommands available can extract noun phrases (`nounphrases`), noun-verb pairs (`nounverbs`), entity-verb pairs (`entverbs`), and prepositional phrases (`prepositions`) from the text documents. These are the available subcommands:
 
-* **glove**: Run glove algorithm.
-* **grammar**: G
+* nounphrases         Extract noun phrases.
+* nounverbs           Extract noun-verb pairs.
+* entverbs            Extract entity-verb pairs.
+* prepositions        Extract prepositional phrases.
+
+All of the grammar sub-sub-commands take the same two arguments. `-m` sets a lower limit on frequencies of phrases and `-hr` specifies human-readable output.
+
+```
+  -m MIN_TF, --min_tf MIN_TF
+                        Min phrase count to include.
+  -hr, --human-readable
+                        Produce human readable output.
+```
+
+#### Noun Phrase Sub-sub-command
+
+This subcommand will identify noun phrases in the documents.
+
+
+#### Noun-Verb Sub-sub-command
+
+This subcommand will identify noun-verb pairs in the documents.
+
+
+#### Entity-Verb Sub-sub-command
+
+This subcommand will identify entity-verb relations in the documents.
+
+
+#### Prepositional Phrase Sub-sub-command
+
+This subcommand will identify prepositional phrases in the documents.
+
 
