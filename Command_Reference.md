@@ -149,6 +149,31 @@ optional arguments:
                         Entity types to ignore. Format: "etype1,etype2".
 ```
 
+A basic list of entity types is given below. For full documentation, see the [Spacy NER Annotation Specification page](https://spacy.io/api/annotation#named-entities).
+
+```
+TYPE	DESCRIPTION
+PERSON	People, including fictional.
+NORP	Nationalities or religious or political groups.
+FAC	Buildings, airports, highways, bridges, etc.
+ORG	Companies, agencies, institutions, etc.
+GPE	Countries, cities, states.
+LOC	Non-GPE locations, mountain ranges, bodies of water.
+PRODUCT	Objects, vehicles, foods, etc. (Not services.)
+EVENT	Named hurricanes, battles, wars, sports events, etc.
+WORK_OF_ART	Titles of books, songs, etc.
+LAW	Named documents made into laws.
+LANGUAGE	Any named language.
+DATE	Absolute or relative dates or periods.
+TIME	Times smaller than a day.
+PERCENT	Percentage, including ”%“.
+MONEY	Monetary values, including unit.
+QUANTITY	Measurements, as of weight or distance.
+ORDINAL	“first”, “second”, etc.
+CARDINAL	Numerals that do not fall under another type.
+```
+
+
 ### Topic Modeling Subcommand
 
 The topic modeling subcommand allows one to run the LDA or NMF topic modeling algorithms on a corpus of documents. The default algorithm is LDA but one can also specify NMF using the `-t` argument, the number of topics using the `-n` argumnent, the algorithm seed using `-s` (for reproducability between runs), a frequency cutoff threshold using the `-m` command, and choose wether or not to save the word matrix using the `-nswm` flag. The word matrix can somtimes be huge, so omission might be desirable if an excel output is needed.
