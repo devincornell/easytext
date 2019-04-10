@@ -9,9 +9,7 @@ This package combines several common text analysis algorithms into a single pack
 Most of the easytext api can be accessed through the easyparse function. Through this 
 
 ```
-
 nlp = spacy.load('en')
-
 ```
 
 
