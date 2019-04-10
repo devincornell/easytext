@@ -312,7 +312,7 @@ def subcommand_grammar_args(main_parser, main_subparsers):
     
     
     # prepositional phrases
-    prep_parser = grammar_subparsers.add_parser('prepositions', help='Extract prepositional phrases.',)
+    prep_parser = grammar_subparsers.add_parser('prepphrases', help='Extract prepositional phrases.',)
     common_args(prep_parser)
     add_common_grammar_args(prep_parser)
     
@@ -323,19 +323,13 @@ def subcommand_grammar(texts, docnames, args):
     nlp = spacy.load('en')
 
     #args.grammar_command is from {nounphrases, nounverbs, entverbs, prepositions}
-    property_counts = {
-        'nounphrases':'nounphrasecounts',
-        'nounverbs':'nounverbcounts',
-        'entverbs':'entverbcts',
-        'prepositions':'prepphrasecounts',
-    }
     
     # parse texts using spacy
     print('Extracting grammatical properties from', len(texts), 'texts.')
     counts = list()
     for pw in easyparse(nlp,texts,enable=[args.grammar_command,]):
-        ct_property = property_counts[args.grammar_command]
-        counts.append({str(k).strip():v for k,v in pw[ct_property].items()})
+        cts = dict(Counter(pw[args.grammar_command]))
+        counts.append({str(k).strip():v for k,v in cts.items()})
         
             
     # build output sheets
