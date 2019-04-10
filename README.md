@@ -1,10 +1,11 @@
 
 
-# Easy Text Analysis
+# EasyText Analysis
 
-Text analysis for those of us that don't want to code.
+This package combines several common approaches to text analysis. It includes a simple interface for parsing text data through an API driven by custom Spacy pipeline components and an extensive command-line interface which wraps the EasyText api and other popular tools for text analysis. This document will cover primarily the Python API; for command line reference, see the documentation in [Command_Reference.md](/Command_Reference.md)).
 
-For the command line interface, see the [Command_Reference.md page](/Command_Reference.md).
+
+For the command line interface, .
 
 ## Features
 
