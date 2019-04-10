@@ -4,6 +4,8 @@
 
 Text analysis for those of us that don't want to code.
 
+For the command line interface, see the [Command_Reference.md page](/Command_Reference.md).
+
 ## Features
 
 * word counts (using spacy library tokenizer)
