@@ -6,11 +6,28 @@ from .reports import write_report
 
 class DocModel:
     '''
-        This class contains a representation of documents in a corpus.
+        This class contains a representation of documents in a corpus according
+            to some number of dimensions.
         It is currently being used for LDA and NMF topic models and Glove
             document representations.
     '''
     def __init__(self, doc_features, feature_words, vocab, docnames=None, model=None):
+        
+        '''
+            Represents Nd documents according to Nf features which are composed
+                of Nt tokens (or an arbitrary basis set).
+                
+            Inputs:
+                doc_features: <Nd x Nf> matrix of document representations.
+                    (i.e. topic distributions, embedding vectors, etc)
+                feature_words: <Nf x Nt> matrix of feature representations
+                    in terms of tokens (or some arbitrary basis more generally).
+                vocab: actual tokens that compose the Nt basis dimensions
+                docnames: a convenient input of document names that will be 
+                    return in class methods.
+                model: arbitrary object for storing original sklearn LDA, NMF
+                    or glove models with associated training parameters.
+        '''
         
         # doc_features is <Ndocs X Nfeat> and feature_words is <Nvocab X Nvocab>
         assert(doc_features.shape[1] == feature_words.shape[0])
@@ -42,7 +59,12 @@ class DocModel:
         self.docnames = newdocnames
         
     def get_feature_docs(self, feature, topn=None):
-        ''' Gives docs most closely associated with a given feature. '''
+        '''
+            Gives documents most closely associated with a given feature.
+            Input:
+                feature: number corresponding to the desired feature.
+                topn: number of document ids to return.
+        '''
         assert(feature >= 0 and feature < self.Nfeat)
         
         # series specifying values for each document along the particular feature
@@ -50,14 +72,25 @@ class DocModel:
         return topdocs[:topn]
     
     def get_feature_words(self, feature, topn=None):
-        ''' Gives words most closely associated with a given feature. '''
+        '''
+            Gives words most closely associated with a given feature.
+            Input:
+                feature: number corresponding to the desired feature.
+                topn: number of document ids to return.
+        '''
         assert(feature >= 0 and feature < self.Nfeat)
         
         topwords = self.feature_words.loc[feature,:].sort_values(ascending=False)
         return topwords[:topn]
     
     def get_doc_features(self, doc, topn=None):
-        ''' Gives features most closely associated with a given doc. '''
+        '''
+            Gives features most closely associated with a given doc.
+            Input:
+                doc: document id assigned through the constructure 
+                    'docnames' parameter or index of document.
+                topn: number of feature ids to return.
+        '''
         assert(doc in self.docnames)
         
         # series specifying values for each document along the particular feature
@@ -65,7 +98,12 @@ class DocModel:
         return topfeat[:topn]
         
     def get_word_features(self, word, topn=None):
-        ''' Gives features most closely associated with a given word. '''
+        '''
+            Gives features most closely associated with a given word.
+            Input:
+                word: word (or arbitrary basis name) to get features of.
+                topn: number of feature ids to return.
+        '''
         assert(word in self.feature_words.columns)
         
         # series specifying values for each document along the particular feature
@@ -75,8 +113,11 @@ class DocModel:
     
     # ________ Create Summary DataFrames _________
     def feature_words_summary(self,topn=None):
-        ''' Shows words most closely associated with each feature. '''
-        
+        '''
+            Shows words most closely associated with each feature.
+            Input:
+                topn: number of words to return.
+        '''
         if topn is None:
             topn = len(self.vocab)
         
@@ -90,7 +131,11 @@ class DocModel:
         return df
             
     def doc_feature_summary(self, topn=None):
-        ''' Shows features most closely associated with each document. '''
+        '''
+            Shows features most closely associated with each document.
+            Input:
+                topn: number of features to return.
+        '''
         
         if topn is None:
             topn = self.Nfeat
@@ -109,6 +154,15 @@ class DocModel:
         '''
             simply calls write_report after inputting desired dataframes.
             inputs:
+                fname: file destination.
+                save_wordmatrix: T/F save word matrix to output. This 
+                    file can be huge, so may not always be able to do 
+                    it.
+                featurename: name of feature for sheet titles. For a topic
+                    model, should be 'topic'. For embedding model, should 
+                    be 'dimension'.
+                summary_topn: number of words/features to return in the 
+                    summary pages.
                 **kwargs goes to write_report() directly.
         '''
         if featurename is None:
