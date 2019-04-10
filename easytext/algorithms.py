@@ -36,7 +36,7 @@ def lda(docbows, n_topics, random_state=0, min_tf=2, learning_method='online', d
     vocab = vectorizer.get_feature_names()
     
     lda_model = LatentDirichletAllocation(
-        n_topics=n_topics, 
+        n_components=n_topics, 
         learning_method=learning_method,
         random_state=random_state, 
         **kwargs,
