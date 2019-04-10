@@ -10,7 +10,27 @@ from .docmodel import DocModel
 
 
 def lda(docbows, n_topics, random_state=0, min_tf=2, learning_method='online', docnames=None, **kwargs):
-
+    '''
+        Interface for Latent Dirichlet Allocation algorithm using sklearn CountVectorizer and
+            LatentDirichletAllocation methods.
+            
+        Output: Returns DocModel object containing the results of the topic model.
+        
+        Inputs: 
+            docbows: Iterable of document token iterables
+            n_topics: Number of documents to use in the topic model.
+            random_state: Integer for seeding random generator. Allows
+                for making reproducable topic models.
+            min_tf: Minimum number of times a token must appear in 
+                the corpus to be added to the topic model.
+            learning_method: 'online' or 'batch', fed directly into the 
+                sklearn LatentDirichletAllocation function.
+            docnames: document names that will appear in DocModel
+                for convenience.
+            **kwargs: other keyword arguments fed directly into the 
+                sklearn LatentDirichletAllocation function.
+    '''
+    
     vectorizer = CountVectorizer(tokenizer = lambda x: x, preprocessor=lambda x:x,min_df=min_tf)
     corpus = vectorizer.fit_transform(docbows)
     vocab = vectorizer.get_feature_names()
