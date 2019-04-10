@@ -236,6 +236,15 @@ def subcommand_glove_args(main_parser, main_subparsers):
     newp.add_argument('-m','--min_tf', type=int, default=0, help='Minimum number of word occurrences to include in the model.')
     newp.add_argument('-nswm','--nosave_wordmatrix', action='store_true', help='Don\'t save word matrix in excel (helps to make smaller files).')
 
+def parse_keywords(kw):
+    if kw is None:
+        return None
+     
+    kwgroups = [[w.strip() for w in kwg.split(',') if len(w.strip())>0] for kwg in kw.split('|')]
+    kwgroups = [kwg for kwg in kwgroups if len(kwg)>0]
+    
+    return kwgroups
+    
 def subcommand_glove(texts, docnames, args):
     assert(args.dimensions > 0)
     assert(args.dimensions < len(texts))

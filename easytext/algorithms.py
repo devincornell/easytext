@@ -52,7 +52,24 @@ def lda(docbows, n_topics, random_state=0, min_tf=2, learning_method='online', d
     return DocModel(doctopics, topics, vocab, docnames=docnames)
     
 def nmf(docbows, n_topics, random_state=0, min_tf=2, docnames=None, **kwargs):
-    
+    '''
+        Interface for Non-negative Matrix Factorization algorithm using sklearn 
+            TfidfVectorizer and NMF methods.
+            
+        Output: Returns DocModel object containing the results of the topic model.
+        
+        Inputs: 
+            docbows: Iterable of document token iterables
+            n_topics: Number of documents to use in the topic model.
+            random_state: Integer for seeding random generator. Allows
+                for making reproducable topic models.
+            min_tf: Minimum number of times a token must appear in 
+                the corpus to be added to the topic model.
+            docnames: document names that will appear in DocModel
+                for convenience.
+            **kwargs: other keyword arguments fed directly into the 
+                sklearn NMF function.
+    '''
     vectorizer = TfidfVectorizer(tokenizer = lambda x: x, preprocessor=lambda x:x,min_df=min_tf)
     corpus = vectorizer.fit_transform(docbows)
     vocab = vectorizer.get_feature_names()
@@ -108,10 +125,24 @@ def calc_cutoffind(freqs,min_tf):
 def glove(docsents, n_dim, random_state=0, min_tf=1, docnames=None, keywords=None, **kwargs):
     
     '''
-        Creates a glove model from docsents.
-        n_dim: number of dimensions
-        random_state: to seed random initializer
-        min_tf: exclused all tokens that appear less than 
+        Interface for Glove algorithm using python-glove package.
+            
+        Output: Returns DocModel object containing the results of the word embedding.
+        
+        Inputs: 
+            docbows: Iterable of document token iterables (nested by document, will 
+                be flattened).
+            n_dim: Number of dimensions to use in the embedding model.
+            random_state: Integer for seeding random generator. Allows
+                for making reproducable embedding models.
+            min_tf: Minimum number of times a token must appear in 
+                the corpus to be added to the topic model.
+            docnames: document names that will appear in DocModel
+                for convenience.
+            keywords: list of lists of words that will form the basis of a 
+                hyper-rotated version of a new embedding model.
+            **kwargs: other keyword arguments fed directly into the 
+                sklearn NMF function.
     '''
     
     # count frequencies

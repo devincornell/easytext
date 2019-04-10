@@ -21,14 +21,7 @@ def make_parser(subcommands):
 
 
 
-def parse_keywords(kw):
-    if kw is None:
-        return None
-     
-    kwgroups = [[w.strip() for w in kwg.split(',') if len(w.strip())>0] for kwg in kw.split('|')]
-    kwgroups = [kwg for kwg in kwgroups if len(kwg)>0]
-    
-    return kwgroups
+
 
 
 if __name__ == '__main__':
