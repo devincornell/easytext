@@ -23,7 +23,7 @@ for etdoc in easyparse(nlp, texts, enable=components):
 
 ### Preprocessing Feature List
 
-The full list of preprocessing components is provided below. Each component has an associated output variable of the same name that will be contained in the document object output from the `easyparse()` function.
+The full list of preprocessing components is provided below. Each component has an associated output variable of the same name that will appear as a key in the document dictionary output from the `easyparse()` function. These components are enabled by using the `enable` keyword argument to the `easytext()` function. For instance, if I wanted to get a list of named entities and noun-verb pairs from a set of documents, I would use the `easytext()` argument `enable = ['entlist', 'nounverbs']`, when could then be accessed using the 'entlist' and 'nounverb' entries in the returned document data.
 
 * **wordlist**: Extracts a list of tokens, including words and punctuation, that appear in the document.
 * **sentlist**: Contains a list of sentence token lists that appear in the document.
