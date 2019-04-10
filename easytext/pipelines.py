@@ -20,6 +20,17 @@ def combine_ent_tokens(doc):
 
 class ExtractWordListPipeline():
     #name = 'easytext-wordlist'
+    '''
+        Extracts word lists from each document. This can be used
+            for input into topic modeling or other document-word-
+            sequence or BoW algorithms.
+        Inputs:
+            nlp: spacy nlp object, usually initalized using 
+                nlp = spacy.load('en')
+            kwargs: dictionary corresponding to settings for this
+                pipeline component.
+                kwargs['use_ents']: combine multi-word entities.
+    '''
     def __init__(self,nlp, kwargs):
         self.use_ents = kwargs['use_ents']
         
@@ -43,11 +54,22 @@ class ExtractWordListPipeline():
         wordlist = [self.usetext(t) for t in doc if use_token(t)]
         
         doc._.easytext['wordlist'] = wordlist
-        doc._.easytext['wordcounts'] = dict(Counter(wordlist))
+        #doc._.easytext['wordcounts'] = dict(Counter(wordlist))
         
         return doc
     
 class ExtractSentListPipeline():
+    '''
+        Extracts sentence lists from each document. This can be used
+            for input into word embedding or other algorithms relying
+            on sentence lists.
+        Inputs:
+            nlp: spacy nlp object, usually initalized using 
+                nlp = spacy.load('en')
+            kwargs: dictionary corresponding to settings for this
+                pipeline component.
+                kwargs['use_ents']: combine multi-word entities.
+    '''
     #name = 'easytext-wordlist'
     def __init__(self,nlp, kwargs):
         self.use_ents = kwargs['use_ents']
@@ -87,6 +109,22 @@ def get_basetext(etext):
 
 class ExtractEntListPipeline():
     #name = 'easytext-entlist'
+    '''
+        Extracts entity lists from each document, combining entities
+            who have the same base text, or letter case and spacing
+            (see get_basetext() for rules on base text).
+        Inputs:
+            nlp: spacy nlp object, usually initalized using 
+                nlp = spacy.load('en')
+            kwargs: dictionary corresponding to settings for this
+                pipeline component.
+                kwargs['use_ent_types']: entity types to include
+                    in returned entity lists. Mut. exclusive with
+                    'ignore_ent_types'.
+                kwargs['ignore_ent_types']: entity types to exclude
+                    in returned entity lists. Mut. exclusive with
+                    'use_ent_types'.
+    '''
     def __init__(self, nlp, kwargs):
         
         self.use_ent_types = kwargs['use_ent_types']
@@ -136,7 +174,7 @@ class ExtractEntListPipeline():
         # set properties into pipeline
         doc._.easytext['entlist'] = entdat
         doc._.easytext['entmap'] = self.entmap
-        doc._.easytext['entcts'] = entcts
+        #doc._.easytext['entcts'] = entcts
         
         return doc
     
@@ -144,6 +182,14 @@ class ExtractEntListPipeline():
 
 class ExtractPrepositionsPipeline():
     #name = 'easytext-prepositions'
+    '''
+        Extracts lists of prepositional phrases from each document.
+        Inputs:
+            nlp: spacy nlp object, usually initalized using 
+                nlp = spacy.load('en')
+            kwargs: dictionary corresponding to settings for this
+                pipeline component. Currently unused.
+    '''
     def __init__(self,nlp, kwargs):
         
         if not Doc.has_extension('easytext'):
@@ -156,7 +202,7 @@ class ExtractPrepositionsPipeline():
                 pp = ''.join([t.orth_ + t.whitespace_ for t in tok.subtree])
                 phrases.append(pp)
         
-        doc._.easytext['prepphrasecounts'] = dict(Counter(phrases))
+        #doc._.easytext['prepphrasecounts'] = dict(Counter(phrases))
         doc._.easytext['prepphrases'] = phrases
         
         return doc
@@ -172,6 +218,16 @@ def get_nounverb(noun):
     
 class ExtractNounVerbsPipeline():
     #name = 'easytext-nounverbs'
+    '''
+        Extracts noun-verb pair tuples from each document.
+        Output: list of noun-verb pair tuples in the given document.
+        
+        Inputs:
+            nlp: spacy nlp object, usually initalized using 
+                nlp = spacy.load('en')
+            kwargs: dictionary corresponding to settings for this
+                pipeline component. Currently unused.
+    '''
     def __init__(self,nlp, kwargs):
         #self.phrases = list()
         if not Doc.has_extension('easytext'):
@@ -188,12 +244,11 @@ class ExtractNounVerbsPipeline():
                 if nv is not None:
                     nounverbs.append((nv[0].text, nv[1].text))
         
-        doc._.easytext['nounverbcounts'] = dict(Counter(nounverbs))
+        #doc._.easytext['nounverbcounts'] = dict(Counter(nounverbs))
         doc._.easytext['nounverbs'] = nounverbs
         
         
         return doc
-    
     
 def getverb(tok):
     '''Finds the associated verb from a given noun token.
@@ -207,6 +262,18 @@ def getverb(tok):
     
 class ExtractEntVerbsPipeline():
     #name = 'easytext-entverbs'
+    '''
+        Extracts entity-verb pair tuples from each document.
+        Output: list of noun-verb pair tuples in the given document.
+        
+        Inputs:
+            nlp: spacy nlp object, usually initalized using 
+                nlp = spacy.load('en')
+            kwargs: dictionary corresponding to settings for this
+                pipeline component. In this pipeline, is passed
+                directly to the ExtractEntListPipeline pipeline
+                component.
+    '''
     def __init__(self,nlp, kwargs):
         if not Doc.has_extension('easytext'):
             Doc.set_extension('easytext', default=dict())
@@ -221,7 +288,6 @@ class ExtractEntVerbsPipeline():
         for span in spans:
             span.merge()
         
-        
         entverbs = list()
         for ename, eobj in doc._.easytext['entlist']:
             nv = get_nounverb(eobj)
@@ -229,7 +295,7 @@ class ExtractEntVerbsPipeline():
                 entverbs.append((nv[0].text.strip(), nv[1].text.strip()))
         
         doc._.easytext['entverbs'] = entverbs
-        doc._.easytext['entverbcts'] = dict(Counter(entverbs))
+        #doc._.easytext['entverbcts'] = dict(Counter(entverbs))
         
         return doc
     
@@ -238,6 +304,16 @@ class ExtractEntVerbsPipeline():
 
 class ExtractNounPhrasesPipeline():
     #name = 'easytext-prepositions'
+    '''
+        Extracts noun phrases from each document.
+        Output: list of noun phrase strings.
+        
+        Inputs:
+            nlp: spacy nlp object, usually initalized using 
+                nlp = spacy.load('en')
+            kwargs: dictionary corresponding to settings for this
+                pipeline component. Currently unused.
+    '''
     def __init__(self,nlp, kwargs):
         
         if not Doc.has_extension('easytext'):
@@ -250,7 +326,7 @@ class ExtractNounPhrasesPipeline():
             #np_text = ' '.join(nounphrase)
             nounphrases.append(nounphrase.text.strip().lower())
         
-        doc._.easytext['nounphrasecounts'] = dict(Counter(nounphrases))
+        #doc._.easytext['nounphrasecounts'] = dict(Counter(nounphrases))
         doc._.easytext['nounphrases'] = nounphrases
         
         return doc
