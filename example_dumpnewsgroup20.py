@@ -76,7 +76,7 @@ if __name__ == '__main__':
         raise Exception('Need to provde command from {spreadsheet, textfiles, singletext}')
     
     cmd_type = sys.argv[1]
-    if len(sys.argv):
+    if len(sys.argv) > 2:
         useN = int(sys.argv[2])
     else:
         useN = 100
