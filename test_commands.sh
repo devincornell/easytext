@@ -4,7 +4,7 @@
 
 mkdir testoutput
 
-python example_dumpnewsgroup20.py textfiles 100
+python example_data.py textfiles 100
 
 
 # word count
