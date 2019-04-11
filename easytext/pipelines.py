@@ -38,12 +38,13 @@ class ExtractWordListPipeline():
             Doc.set_extension('easytext', default=dict())
         
         if self.use_ents:
-            if 'ner' not in nlp.pipe_names:
-                nercomponent = nlp.create_pipe('ner') 
-                nlp.add_pipe(nercomponent,first=True)
             self.usetext = lambda t: t.lower_ if t.ent_type_=='' else t.text
         else:
             self.usetext = lambda t: t.lower_
+        
+        if not Doc.has_extension('easytext'):
+            Doc.set_extension('easytext', default=dict())
+            
             
     def __call__(self, doc):
         
@@ -77,10 +78,8 @@ class ExtractSentListPipeline():
         if not Doc.has_extension('easytext'):
             Doc.set_extension('easytext', default=dict())
             
+            
         if self.use_ents:
-            if 'ner' not in nlp.pipe_names:
-                nercomponent = nlp.create_pipe('ner') 
-                nlp.add_pipe(nercomponent,first=True)
             self.usetext = lambda t: t.lower_ if t.ent_type_=='' else t.text
         else:
             self.usetext = lambda t: t.lower_
@@ -131,11 +130,6 @@ class ExtractEntListPipeline():
         self.ignore_ent_types = kwargs['ignore_ent_types']
         
         self.entmap = dict() # basetext -> list(entnames)
-        
-        # add the spacy NER to pipeline
-        if 'ner' not in nlp.pipe_names:
-            nercomponent = nlp.create_pipe('ner')
-            nlp.add_pipe(nercomponent,first=True)
         
         # these will be set by spacy in the pipeline
         if not Doc.has_extension('easytext'):
@@ -235,6 +229,7 @@ class ExtractNounVerbsPipeline():
     '''
     def __init__(self,nlp, kwargs):
         #self.phrases = list()
+        
         if not Doc.has_extension('easytext'):
             Doc.set_extension('easytext', default=dict())        
     def __call__(self, doc):
@@ -282,10 +277,6 @@ class ExtractEntVerbsPipeline():
     def __init__(self,nlp, kwargs):
         if not Doc.has_extension('easytext'):
             Doc.set_extension('easytext', default=dict())
-        
-        if not 'easytext-entlist' in nlp.pipe_names:
-            component = ExtractEntListPipeline(nlp,kwargs)
-            nlp.add_pipe(component,last=True)
             
     def __call__(self, doc):
         # merge multi-word entities

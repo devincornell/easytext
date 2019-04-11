@@ -9,19 +9,56 @@ import string
 
 # VVVVVVVVVVVVVVVVVVVV PIPELINE COMPONENTS VVVVVVVVVVVVVVVVVVVVVVV
 
+# NOTE NOTE NOTE: Do not have circular dependenceies "OR ELSE."
 ALL_COMPONENTS = {
-    'wordlist':{'comp':ExtractWordListPipeline,'dep':[]},
-    'sentlist':{'comp':ExtractSentListPipeline,'dep':[]},
-    'entlist':{'comp':ExtractEntListPipeline, 'dep':[]},
-    'prepphrases':{'comp':ExtractPrepositionsPipeline,'dep':[]},
-    'nounverbs':{'comp':ExtractNounVerbsPipeline, 'dep':[]},
-    'entverbs':{'comp':ExtractEntVerbsPipeline, 'dep':['entlist',]},
-    'nounphrases':{'comp':ExtractNounPhrasesPipeline, 'dep':[]},
+    'wordlist':{'comp':ExtractWordListPipeline,'easytext_dep':[], 'spacy_dep':['sbd',]},
+    'sentlist':{'comp':ExtractSentListPipeline,'easytext_dep':[], 'spacy_dep':['sbd',]},
+    'entlist':{'comp':ExtractEntListPipeline, 'easytext_dep':[], 'spacy_dep':['ner','parser']},
+    'prepphrases':{'comp':ExtractPrepositionsPipeline,'easytext_dep':[], 'spacy_dep':[]},
+    'nounverbs':{'comp':ExtractNounVerbsPipeline, 'easytext_dep':[], 'spacy_dep':[]},
+    'entverbs':{'comp':ExtractEntVerbsPipeline, 'easytext_dep':['entlist',], 'spacy_dep':[]},
+    'nounphrases':{'comp':ExtractNounPhrasesPipeline, 'easytext_dep':[], 'spacy_dep':[]},
 }
 
+def recursive_add_component(add_component, components, nlp, pipeargs):
+    '''
+        Recursively adds pipelines to spacy nlp model, ensuring both spacy and easytext 
+            dependencies are met.
+        
+        Output: Generator for each parsed document. Enabled features correspond to 
+            dictionary keys here. For instance, if enable=['wordlist',],
+            the generator output will add a key called 'wordlist'.
+        
+        Inputs:
+            add_component: str name of component to add, out of components.keys()
+            components: dictionary of easytext component names and objects with
+                easytext ('easytext_dep') and spacy ('spacy_dep') dependencies.
+            nlp: spacy model to add pipelines to.
+            
+    '''
+    
+    if add_component not in nlp.pipe_names:
+        comp = components[add_component]
+
+        # add in other EasyText depenencies
+        for etdep in comp['easytext_dep']:
+            if etdep not in nlp.pipe_names:
+                nlp = recursive_add_component(etdep, components, nlp, pipeargs)
+
+        # add in spacy dependencies
+        for sdep in comp['spacy_dep']:
+            if sdep not in nlp.pipe_names:
+                new_comp = nlp.create_pipe(sdep)
+                nlp.add_pipe(new_comp, last=True)
+
+        # actually add current component
+        nlp.add_pipe(comp['comp'](nlp, pipeargs), name=add_component, last=True)
+    
+    return nlp
+
 # default args are consumed in pipeline components
-DEFAULT_PIPE_ARGS = dict(use_ents=True, use_ent_types=None, ignore_ent_types=None) # defaults that can be written over
-def easyparse(nlp,texts,enable=None,pipeargs=dict(),spacyargs=dict()):
+DEFAULT_PIPE_ARGS = dict(use_ents=False, use_ent_types=None, ignore_ent_types=None) # defaults that can be written over
+def easyparse(nlp,texts,enable=None, disable=None, pipeargs=dict(),spacyargs=dict()):
     '''
         Runs spacy parser loop only extracting data from enabled custom modules.
         
@@ -49,68 +86,29 @@ def easyparse(nlp,texts,enable=None,pipeargs=dict(),spacyargs=dict()):
     '''
     pipeargs = {**DEFAULT_PIPE_ARGS, **pipeargs} # allows user to override defaults
     
-    # enable spacy pipelines 
-    previously_enabled = True
-    if not 'easytext' in nlp.pipe_names:
-        previously_enabled = False
-        component = EasyTextPipeline(nlp,enable=enable,pipeargs=pipeargs)
-        nlp.add_pipe(component,name='easytext')
-        
+    # remove all existing pipe components
+    for pname in nlp.pipe_names:
+        if pname in ALL_COMPONENTS.keys():
+            nlp.remove_pipe(pname)
+    
+    # choose which components to activate
+    if enable is not None:
+        usepipes = set(enable)
+    elif disable is not None:
+        usepipes = list(ALL_COMPONENTS.keys())
+        usepipes -= set(disable)
+    else:
+        usepipes = set(ALL_COMPONENTS.keys())
+    
+    # error check applied pipes
+    if not all([p in ALL_COMPONENTS.keys() for p in usepipes]):
+        raise Exception('Not all of', usepipes, 'are EasyText pipeline names.')
+    
+    # add all components, recursing through dependency trees
+    for pipename in usepipes:
+        nlp = recursive_add_component(pipename, ALL_COMPONENTS, nlp, pipeargs)
+    
     # extracts only easytext data from docs as generator
     for doc in nlp.pipe(texts, **spacyargs):
         dat = doc._.easytext
         yield dat
-        
-    # removes if it wasn't previously added
-    if not previously_enabled:
-        nlp.remove_pipe('easytext')
-
-class EasyTextPipeline():
-    name = 'easytext'
-    '''
-        Master pipeline that combines all EasyText pipeline components
-            listed in ALL_COMPONENTS and defined in pipelines.py.
-        Output: None. Attaches the property spacy doc._.easytext to
-            all spacy doc objects.
-        
-        Inputs:
-            nlp: spacy nlp object, usually initalized using 
-                nlp = spacy.load('en')
-            enable: Enabled pipeline components. Default is to
-                include all pipeline components.
-            disable: Pipeline components not to include.
-            pipeargs: pipeline args passed to each of the individ.
-                pipeline components found in pipelines.py.
-    '''
-    def __init__(self, nlp, enable=None, disable=None, pipeargs=dict()):
-        pipeargs = {**DEFAULT_PIPE_ARGS, **pipeargs} # allows user to override defaults
-        
-        if enable is not None:
-            usepipe = set(enable)
-        elif disable is not None:
-            usepipe = list(ALL_COMPONENTS.keys())
-            usepipe -= set(disable)
-        else:
-            usepipe = set(ALL_COMPONENTS.keys())
-        
-        # ensure correct pipe names
-        self.components = list()
-        for pn in usepipe:
-            if pn not in ALL_COMPONENTS.keys():
-                raise Exception('invalid pipe name provided:', pn)
-            
-            # add any dependencies before the listed component
-            for dep in ALL_COMPONENTS[pn]['dep']:
-                if not dep in [cname for cname,comp in self.components]:
-                    self.components.append((dep, ALL_COMPONENTS[dep]['comp'](nlp,pipeargs)))
-                
-            # add component itself
-            self.components.append((pn, ALL_COMPONENTS[pn]['comp'](nlp,pipeargs)))
-    
-    def __call__(self, doc):
-        for pnname,pcomp in self.components:
-            pcomp.__call__(doc)
-        
-        return doc
-
-
