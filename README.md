@@ -1,7 +1,7 @@
 
 # EasyText
 
-This package combines several common text analysis algorithms into a single interface. It includes a simple interface for parsing text data through an API driven by custom Spacy pipeline components and an extensive command-line interface which wraps the EasyText api and other features. This document will cover primarily the Python API; for command line reference, see the documentation on the [Command Reference Page](/Command_Reference.md)).
+This package combines several common text analysis algorithms into a single interface. It includes a simple interface for parsing text data through an API driven by custom Spacy pipeline components and an extensive command-line interface which wraps the EasyText api and other features. This document will cover primarily the Python API; for command line reference, see the documentation on the [Command Reference Page](/docs/Command_Reference.md)).
 
 The easytext interface can be divided into two sections: pre-processing with the `easyparse()` function and algorithm wrapper functions.
 
