@@ -1,14 +1,22 @@
 
 from setuptools import setup
 
-setup(name='easytext',
-    version='0.2',
-    description='Simple text analysis tools.',
+setup(
+    name='easytext',
+    packages=['easytext',],
+    version='0.1',
+    license='MIT',
+    description='Simple text analysis tools with command line interface that writes to excel files.',
     url='https://github.com/devincornell/easytext',
     author='Devin J. Cornell',
     author_email='devinj.cornell@gmail.com',
-    license='MIT',
-    packages=['easytext'],
+    download_url = 'https://github.com/user/X/archive/v_01.tar.gz',
+    keywords=[
+        'text analysis', 
+        'topic modeling', 
+        'parse trees', 
+        'educational',
+    ]
     install_requires=[
         'sklearn',
         'spacy',
