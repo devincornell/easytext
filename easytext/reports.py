@@ -21,11 +21,11 @@ def write_report(fname, sheets, hdf_if_fail=True, verbose=True, **kwargs):
                 path, file = os.path.split(fname)
                 base, ext = os.path.splitext(file)
                 
-                newfname = os.path.join(path + base) + '.h5'
+                newfname = os.path.join(path, base) + '.h5'
                 if os.path.isfile(newfname):
                     i = 1
                     while os.path.isfile(newfname):
-                        newfname = path + base + '_{}.h5'.format(i)
+                        newfname = os.path.join(path, base) + '_{}.h5'.format(i)
                         i += 1
                 
                 write_hdf(newfname, sheets, **kwargs)
