@@ -2,7 +2,7 @@
 from spacy.tokens import Doc
 import string
 from collections import Counter
-
+import spacy
 
     
 # ________________________ Pipeline Component Definitions __________________________
@@ -131,6 +131,11 @@ class ExtractEntListPipeline():
         self.ignore_ent_types = kwargs['ignore_ent_types']
         
         self.entmap = dict() # basetext -> list(entnames)
+        
+        # add the spacy NER to pipeline
+        if 'ner' not in nlp.pipe_names:
+            nercomponent = nlp.create_pipe('ner')
+            nlp.add_pipe(nercomponent,first=True)
         
         # these will be set by spacy in the pipeline
         if not Doc.has_extension('easytext'):
