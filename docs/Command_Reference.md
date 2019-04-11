@@ -86,6 +86,35 @@ The EasyText command line interface is organized into a series of subcommands. T
 * **glove**: Run glove algorithm.
 * **grammar**: Grammatical relations: noun phrases, noun-verbs, entity-verbs, prepositional phrases}.
 
+All subcommands essentially have the same arguments for infiles, outfile, -h for help, -dn for document label column (in case of spreadsheet input), -c for text column name (also in case of spreadsheet input), and -nhd to indicate that it should not output an .h5 file if the output is too large for an excel file (which is the default behavior, so-as to prevent processing time of large datasets). More detail is in the relevant parts of the documentation.
+
+```
+usage: __main__.py topicmodel [-h] [-dn DOCLABELCOL] [-c TEXTCOL] [-nhd] -n
+                              NUMTOPICS [-t TYPE] [-s SEED] [-m MIN_TF]
+                              [-nswm]
+                              infiles [infiles ...] outfile
+
+positional arguments:
+  infiles               Input files as either a single text file (must be
+                        .txt), multiple text files (specify with glob (i.e.
+                        myfolder/*.txt), or a spreadsheet (.csv, .xls, .xlsx)
+                        with document name "--doclabel" and text data "--
+                        textcol" column names.
+  outfile               Output spreadsheet. Should end in .xls or .h5
+                        depending on desired format. If command output is too
+                        large to be an excel spreadsheet, will save to hdf
+                        unless "--nohdfonfail" flag is used.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -dn DOCLABELCOL, --doclabelcol DOCLABELCOL
+                        Column name for document title/id.
+  -c TEXTCOL, --textcol TEXTCOL
+                        Column name of text data (if excel file provided).
+  -nhd, --nohdfonfail   Don't write hdf if the data is too big for excel.
+
+```
+
 ### Word Count Subcommand
 
 This feature simply counts the frequency of word appearance in each document. By default, this command will count occurrence of all words in the corpus, but users can specify the lower frequency cutoff with the `-m` argument. Additionally, users can use the `-w` argument to specify words that should be counted in the corpus, instead of counting corpus words.
