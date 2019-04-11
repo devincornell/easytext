@@ -92,10 +92,10 @@ if __name__ == '__main__':
         
     # run commands
     if cmd_type == 'spreadsheet':
-        make_textfiles(useN,)
+        make_spreadsheet(useN,)
         
     elif cmd_type == 'textfiles':
-        make_spreadsheet(useN,)
+        make_textfiles(useN,)
     
     elif cmd_type == 'singletext':
         make_single_textfile(useN,)
