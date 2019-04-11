@@ -14,11 +14,10 @@ from easytext import easyparse
 
 texts # list of strings containing the texts of interest
 
-components = ['wordlist', 'entlist']
 nlp = spacy.load('en')
-for etdoc in easyparse(nlp, texts, enable=components):
-  print(etdoc['wordlist']) # prints list of tokens in the doc
-  print(etdoc['entlist']) # prints list of Named Entities in the doc
+for etdoc in easyparse(nlp, texts, enable=['wordlist','entlist']):
+    print(etdoc['wordlist'])
+    print(etdoc['entlist'], end='\n\n')
 ```
 
 ### Preprocessing Feature List
@@ -49,11 +48,10 @@ from easytext import easyparse
 texts # list of strings containing the texts of interest
 
 # preprocess documents into bags of words
-components = ['wordlist',]
 nlp = spacy.load('en')
 docbows = list()
-for etdoc in easyparse(nlp, texts, enable=components):
-  docbows.append(etdoc['wordlist'])
+for etdoc in easyparse(nlp, texts, enable=['wordlist',]):
+    docbows.append(etdoc['wordlist'])
 
 # create topic model
 topicmodel = lda(docbows, 10)
