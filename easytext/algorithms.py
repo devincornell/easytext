@@ -9,7 +9,7 @@ from .docmodel import DocModel
 
 
 
-def lda(docbows, n_topics, random_state=0, min_tf=2, learning_method='online', docnames=None, **kwargs):
+def lda(docbows, n_topics, random_state=0, min_tf=2, learning_method='online', docnames=None, include_model=False,  **kwargs):
     '''
         Interface for Latent Dirichlet Allocation algorithm using sklearn CountVectorizer and
             LatentDirichletAllocation methods.
@@ -49,9 +49,12 @@ def lda(docbows, n_topics, random_state=0, min_tf=2, learning_method='online', d
     #https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.LatentDirichletAllocation.html
     topics = topics/topics.sum(axis=1)[:, np.newaxis]
     
-    return DocModel(doctopics, topics, vocab, docnames=docnames)
+    if include_model:
+        return DocModel(doctopics, topics, vocab, docnames=docnames, model=lda_model, vectorizer=vectorizer)
+    else:
+        return DocModel(doctopics, topics, vocab, docnames=docnames)
     
-def nmf(docbows, n_topics, random_state=0, min_tf=2, docnames=None, **kwargs):
+def nmf(docbows, n_topics, random_state=0, min_tf=2, docnames=None, include_model=False,  **kwargs):
     '''
         Interface for Non-negative Matrix Factorization algorithm using sklearn 
             TfidfVectorizer and NMF methods.
@@ -79,11 +82,15 @@ def nmf(docbows, n_topics, random_state=0, min_tf=2, docnames=None, **kwargs):
         random_state=random_state,
         **kwargs,
        ).fit(corpus)
-    
+    print(corpus.shape)
+    print(len(vocab))
     doctopics = nmf_model.transform(corpus)
     topics = nmf_model.components_
     
-    return DocModel(doctopics, topics, vocab, docnames=docnames)
+    if include_model:
+        return DocModel(doctopics, topics, vocab, docnames=docnames, model=nmf_model, vectorizer=vectorizer)
+    else:
+        return DocModel(doctopics, topics, vocab, docnames=docnames)
     
 def pretendsents(docsents):
     '''

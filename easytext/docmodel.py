@@ -1,6 +1,8 @@
 import pandas as pd
 import os.path
+import spacy
 
+from .easytext import easyparse
 
 from .reports import write_report
 
@@ -11,7 +13,7 @@ class DocModel:
         It is currently being used for LDA and NMF topic models and Glove
             document representations.
     '''
-    def __init__(self, doc_features, feature_words, vocab, docnames=None, model=None):
+    def __init__(self, doc_features, feature_words, vocab, docnames=None, model=None, vectorizer=None):
         
         '''
             Represents Nd documents according to Nf features which are composed
@@ -40,6 +42,7 @@ class DocModel:
         # optional data for storage
         self.vocab = vocab
         self.model = model
+        self.vectorizer = vectorizer
         
         # name documents as integers if not docnames provided
         self.docnames = docnames if docnames is not None else list(range(self.Ndocs))        
@@ -57,6 +60,22 @@ class DocModel:
     def set_docnames(self,newdocnames):
         self.doc_features.index = newdocnames
         self.docnames = newdocnames
+        
+    def transform(self, texts, lang='en'):
+        if self.model is None or self.vectorizer is None:
+            raise Exception('Need to provide model & vectorizer in DocModel constructor to use .transform()')
+        
+        # tokenize texts
+        nlp = spacy.load(lang, disable=["tagger", "parser", "ner"])
+        bows = [d['wordlist'] for d in easyparse(nlp, texts, enable=['wordlist',])]
+        corpus = self.vectorizer.transform(bows)
+        
+        # actually construct dotopics
+        doc_features = self.model.transform(corpus)
+        
+        # return dataframe
+        return pd.DataFrame(doc_features,index=self.docnames)
+        
         
     def get_feature_docs(self, feature, topn=None):
         '''
