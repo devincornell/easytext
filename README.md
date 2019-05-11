@@ -1,7 +1,18 @@
 
-# EasyText
+# Introduction to EasyText
 
 This package combines several common text analysis algorithms into a single interface. It includes a simple interface for parsing text data through an API driven by custom Spacy pipeline components and an extensive command-line interface which wraps the EasyText api and other features. This document will cover primarily the Python API; for command line reference, see the documentation on the [Command Reference Page](/docs/Command_Reference.md)).
+
+
+
+# Installation
+
+To install the package, you can use the command `pip install easytext`, which pulls from the [PyPi package database](https://pypi.org/project/easytext/). Alternatively, you can install the latest version from github using the `pip install git+https://github.com/devincornell/easytext` command, although I can't gaurantee that it will be fit for use!
+
+Alternatively, you can download the package directly from PyPi [at this link](https://github.com/devincornell/easytext/archive/v0.1.tar.gz).
+
+
+# EasyText Interfaces
 
 The easytext interface can be divided into two sections: pre-processing with the `easyparse()` function and algorithm wrapper functions.
 
