@@ -8,6 +8,9 @@ from .glovetools import glove_transform_paragraph, glove_projection, supervised_
 from .docmodel import DocModel
 
 
+def passthrough(x):
+    return x
+
 
 def lda(docbows, n_topics, random_state=0, min_tf=2, learning_method='online', docnames=None, include_model=False,  **kwargs):
     '''
@@ -73,7 +76,8 @@ def nmf(docbows, n_topics, random_state=0, min_tf=2, docnames=None, include_mode
             **kwargs: other keyword arguments fed directly into the 
                 sklearn NMF function.
     '''
-    vectorizer = TfidfVectorizer(tokenizer = lambda x: x, preprocessor=lambda x:x,min_df=min_tf)
+
+    vectorizer = TfidfVectorizer(tokenizer = passthrough, preprocessor=passthrough,min_df=min_tf)
     corpus = vectorizer.fit_transform(docbows)
     vocab = vectorizer.get_feature_names()
     

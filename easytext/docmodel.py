@@ -61,20 +61,21 @@ class DocModel:
         self.doc_features.index = newdocnames
         self.docnames = newdocnames
         
-    def transform(self, texts, lang='en'):
+    def transform(self, bows, docnames=None, lang='en'):
         if self.model is None or self.vectorizer is None:
             raise Exception('Need to provide model & vectorizer in DocModel constructor to use .transform()')
         
+        if docnames is None:
+            docnames = list(range(len(bows)))
+        
         # tokenize texts
-        nlp = spacy.load(lang, disable=["tagger", "parser", "ner"])
-        bows = [d['wordlist'] for d in easyparse(nlp, texts, enable=['wordlist',])]
         corpus = self.vectorizer.transform(bows)
         
         # actually construct dotopics
         doc_features = self.model.transform(corpus)
         
         # return dataframe
-        return pd.DataFrame(doc_features,index=self.docnames)
+        return pd.DataFrame(doc_features,index=docnames)
         
         
     def get_feature_docs(self, feature, topn=None):
