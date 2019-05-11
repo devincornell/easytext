@@ -82,8 +82,7 @@ def nmf(docbows, n_topics, random_state=0, min_tf=2, docnames=None, include_mode
         random_state=random_state,
         **kwargs,
        ).fit(corpus)
-    print(corpus.shape)
-    print(len(vocab))
+    
     doctopics = nmf_model.transform(corpus)
     topics = nmf_model.components_
     
