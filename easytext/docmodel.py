@@ -1,7 +1,7 @@
 import pandas as pd
 import os.path
 import spacy
-from scipy.sparse import csr_matrix
+import itertools
 
 from .reports import write_report
 
@@ -12,7 +12,7 @@ class DocModel:
         It is currently being used for LDA and NMF topic models and Glove
             document representations.
     '''
-    def __init__(self, doc_features, docnames=None, featnames=None, feature_basis=None, basisnames=None, model=None, vocab=None, vectorizer=None, df_type=pd.SparseDataFrame):
+    def __init__(self, doc_features, docnames=None, featnames=None, feature_basis=None, basisnames=None, df_type=pd.SparseDataFrame, vectorizer=None, model=None):
         
         '''
             Represents Nd documents according to Nf features which are composed
@@ -23,11 +23,13 @@ class DocModel:
                     (i.e. topic distributions, embedding vectors, etc)
                 feature_words: <Nf x Nt> matrix of feature representations
                     in terms of tokens (or some arbitrary basis more generally).
-                vocab: actual tokens that compose the Nt basis dimensions
                 docnames: a convenient input of document names that will be 
                     return in class methods.
                 model: arbitrary object for storing original sklearn LDA, NMF
                     or glove models with associated training parameters.
+                dat: arbitrary data for docmodel storage. One may, for instance,
+                    want to attach data from a model which is output from an algorithm
+                        such as lda or nmf which can be used later.
         '''
         
         # convert doc_features to dataframe
@@ -78,11 +80,14 @@ class DocModel:
             
         
         # optional data for storage
-        self.model = model
         self.vectorizer = vectorizer
+        self.model = model
+        self.df_type = df_type
         
     
-
+    def check_feat_basis(self):
+        if self.feat_basis is None:
+            raise Exception('feature_basis has not been provided.')
             
     
     # ________ Access Dataframe Features _________
@@ -119,8 +124,7 @@ class DocModel:
                 feature: feature id to retrieve.
                 topn: number of document ids to return.
         '''
-        if self.feat_basis is None:
-            raise Exception('feature_basis has not been provided.')
+        self.check_feat_basis()
         
         return self.get_rowcol(self.feat_basis, feature, sort=sort, axis=0)[:topn]
         
@@ -163,6 +167,7 @@ class DocModel:
             topn: max number of features to list for each doc.
         '''
         df = self.get_summary(self.doc_feat, axis=0, topn=topn)
+        df.columns.name = 'nth_feature'
         
         return df
         
@@ -174,6 +179,7 @@ class DocModel:
         '''
 
         df = self.get_summary(self.doc_feat, axis=1, topn=topn)
+        df.index.name = 'nth_doc'
         
         return df
     
@@ -183,10 +189,10 @@ class DocModel:
                 with each feature.
             topn: max number of docs to list for each feature.
         '''
-        if self.feat_basis is None:
-            raise Exception('feature_basis has not been provided.')
+        self.check_feat_basis()
 
         df = self.get_summary(self.feat_basis, axis=0, topn=topn)
+        df.index.name = 'nth_basis'
         
         return df
         
@@ -219,95 +225,50 @@ class DocModel:
                 colval = self.get_rowcol(df, col, sort=True, axis=axis)[:topn]
                 summary_df.loc[:,col] = list(colval.index)
             return summary_df
-        
-        
-        
-    # ________ Create Summary DataFrames _________
-    def feature_words_summary(self, topn=None):
+    
+    
+    @staticmethod
+    def get_totals(df):
         '''
-            Shows words most closely associated with each feature.
+            Gets row sum.
+        '''
+        s = df.sum(axis=0).sort_values(ascending=False)
+        return s
+        
+    
+    @staticmethod
+    def get_human_summary(df, include_totals=False):
+        
+        # create multiindex for human summary
+        prod = itertools.product(df.index, df.columns)
+        mi = pd.MultiIndex.from_tuples(list(prod))
+        hs = pd.Series(df.values.flatten(),index=mi)
+        
+        # sort on values and then index
+        hs = hs.sort_values(ascending=False)
+        hs = hs.sort_index(level=0, sort_remaining=False)
+        hs = hs.dropna()
+        
+        return hs
+        
+        
+    
+    # ---------- Other Functions ----------
+    
+    def transform(self, bows, docnames=None, lang='en'):
+        '''
+            Utility function that summarizes df by sorting 
+                rows/columns. TODO: better description
             Input:
-                topn: number of words to return.
-        '''
-        self._has_feature_words()
-        if topn is None:
-            topn = len(self.vocab)
-        
-        df = pd.DataFrame(index=range(self.Nfeat),columns=range(topn))
-        df.index.name = 'feature'
-        df.columns.name = 'nth top word'
-        for feat in range(self.Nfeat):
-            topwords = self.get_feature_words(feat, topn)
-            df.loc[feat,:] = list(topwords.index)
-        
-        return df
-            
-    def doc_feature_summary(self, topn=None):
-        '''
-            Shows features most closely associated with each document.
-            Input:
-                topn: number of features to return.
-        '''
-        
-        if topn is None:
-            topn = self.Nfeat
-        
-        useNfeat = min(topn, self.Nfeat)
-        df = pd.DataFrame(index=self.docnames, columns=range(useNfeat))
-        df.index.name = 'document'
-        df.columns.name = 'nth top feature'
-        for doc in self.docnames:
-            topfeat = self.get_doc_features(doc, useNfeat)
-            df.loc[doc,:] = list(topfeat.index)
-        
-        return df
-        
-    
-    
-    
-    
-    
-    
-    
-    def get_feature_words(self, feature, topn=None):
-        '''
-            Gives words most closely associated with a given feature.
-            Input:
-                feature: number corresponding to the desired feature.
-                topn: number of document ids to return.
-        '''
-        self._has_feature_words()
-        assert(feature >= 0 and feature < self.Nfeat)
-        
-        topwords = self.feature_words.loc[feature,:].sort_values(ascending=False)
-        return topwords[:topn]
-    
-
-        
-    def get_word_features(self, word, topn=None):
-        '''
-            Gives features most closely associated with a given word.
-            Input:
-                word: word (or arbitrary basis name) to get features of.
+                df: dataframe of values (feat_basis or doc_feat)
+                axis: basis axis to sort from. 0 means it will keep
+                    rows and sort columns for each row. 1 is vice-versa.
                 topn: number of feature ids to return.
         '''
-        self._has_feature_words()
-        assert(word in self.feature_words.columns)
         
-        # series specifying values for each document along the particular feature
-        topfeat = self.feature_words.loc[:,word].sort_values(ascending=False)
-        return topfeat[:topn]
-    
-    
-
-    
-    def set_docnames(self,newdocnames):
-        self.doc_features.index = newdocnames
-        self.docnames = newdocnames
-        
-    def transform(self, bows, docnames=None, lang='en'):
         if self.model is None or self.vectorizer is None:
-            raise Exception('Need to provide model & vectorizer in DocModel constructor to use .transform()')
+            raise Exception('Need to provide model & vectorizer \
+                    in DocModel constructor to use .transform()')
         
         if docnames is None:
             docnames = list(range(len(bows)))
@@ -319,7 +280,10 @@ class DocModel:
         doc_features = self.model.transform(corpus)
         
         # return dataframe
-        return pd.DataFrame(doc_features,index=docnames)
+        df = self.df_type(doc_features, index=docnames, columns=self.doc_feat.columns)
+        df.index.name = 'docname'
+        return df
+    
     
     def write_report(self, fname, save_wordmatrix=False, featurename=None, summary_topn=None, **kwargs):
         '''
@@ -348,8 +312,36 @@ class DocModel:
         return write_report(fname, sheets, **kwargs)
     
 
-        
+'''      
 
     
-
-        
+def make_human_report(df):
+    
+        Creates human readable report from raw values dataframe,
+            essentially by folding columns into multi-index then 
+            sorting.
+    
+    
+    indcolname = '__indexcol__' # remporary column for sorting
+    valuescolname = 'value' # name of column in output
+    totalsindname = '__Totals__'
+    
+    # create dataframe with multi index and index column
+    mi = pd.MultiIndex.from_tuples(list(itertools.product(map(str,df.index),df.columns)))
+    hdf = pd.DataFrame(index=mi, columns=[valuescolname,indcolname])
+    for doc,val in hdf.index:
+        hdf.loc[(doc,val,),valuescolname] = df.loc[doc,val]
+    
+    # sort based on docs then values
+    hdf[indcolname] = list(hdf.index.get_level_values(0))
+    hdf = hdf.sort_values([indcolname,valuescolname],ascending=[True,False])
+    hser = hdf[valuescolname]
+    
+    # create totals value at bottom
+    totser = df.sum(axis=0).sort_values(ascending=False)
+    mi = pd.MultiIndex.from_tuples([(totalsindname,c) for c in totser.index])
+    totser.index = mi
+    hser = hser.append(totser)
+    
+    return hser
+'''
