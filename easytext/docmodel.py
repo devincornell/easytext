@@ -74,39 +74,15 @@ class DocModel:
                 self.feat_basis.columns = objnames
                 self.feat_basis.columns.name = 'object'
                 
-            self.Nobj = self.feat_basis.shape[1]
+            self.Nbasis = self.feat_basis.shape[1]
             
         
         # optional data for storage
         self.model = model
         self.vectorizer = vectorizer
         
-
-    def _has_feature_words():
-        try:
-            self.feature_words
-            self.vocab
-        except:
-            raise Exception('feature_words and/or vocab were not provided in DocModel construcor!')
-        
     
-    def get_rowcol(self, df, ind, sort=True, axis=0):
-        
-        if axis == 0:
-            assert(ind in df.index)
-            if not sort:
-                return df.loc[ind,:]
-            else:
-                top = df.loc[ind,:].sort_values(ascending=False)
-                return top
-            
-        if axis == 1:
-            assert(ind in df.columns)
-            if not sort:
-                return df.loc[:,ind]
-            else:
-                top = df.loc[:,ind].sort_values(ascending=False)
-                return top
+
             
     
     # ________ Access Dataframe Features _________
@@ -122,7 +98,7 @@ class DocModel:
                 topn: number of feature ids to return.
         '''
                 
-        return self.get_rowcol(self.doc_feat, sort=sort, axis=0)[:topn]
+        return self.get_rowcol(self.doc_feat, doc, sort=sort, axis=0)[:topn]
     
         
     def get_feature_docs(self, feature, sort=False, topn=None):
@@ -133,61 +109,116 @@ class DocModel:
                 topn: number of document ids to return.
         '''
         
-        return self.get_rowcol(self.doc_feat, sort=sort, axis=1)[:topn]
+        return self.get_rowcol(self.doc_feat, feature, sort=sort, axis=1)[:topn]
     
     
-    def get_feature_obj(self, feature, sort=False, topn=None):
+    def get_feature_basis(self, feature, sort=False, topn=None):
         '''
             Gives documents most closely associated with a given feature.
             Input:
                 feature: feature id to retrieve.
                 topn: number of document ids to return.
         '''
-        if self.feat_obj is None:
-            raise Exception('feature_obj has not been defined.')
+        if self.feat_basis is None:
+            raise Exception('feature_basis has not been provided.')
         
-        return self.get_rowcol(self.feat_obj, sort=sort, axis=0)[:topn]
+        return self.get_rowcol(self.feat_basis, feature, sort=sort, axis=0)[:topn]
+        
+    @staticmethod
+    def get_rowcol(df, ind, sort=True, axis=0):
+        '''
+            Utility function that returns row(s) or column(s) of
+                df, either sorted or not. Used in get_doc_features
+                and other similar functions.
+            Input:
+                df: dataframe of values (feat_basis or doc_feat)
+                ind: index of row/col (on axis) to be extracted
+                sort: return feat most closely associated with 
+                    the doc.
+                topn: number of feature ids to return.
+        '''
+        if axis == 0:
+            assert(ind in df.index)
+            if not sort:
+                return df.loc[ind,:]
+            else:
+                top = df.loc[ind,:].sort_values(ascending=False)
+                return top
+            
+        if axis == 1:
+            assert(ind in df.columns)
+            if not sort:
+                return df.loc[:,ind]
+            else:
+                top = df.loc[:,ind].sort_values(ascending=False)
+                return top
         
     
     # ________ Create Summary DataFrames _________
+    
     def get_doc_summary(self, topn=None):
         '''
             Creates dataframe listing features most closely associted
                 with each doc.
             topn: max number of features to list for each doc.
         '''
-        if topn is None:
-            cols = range(self.doc_feat.shape[1])
-        else:
-            cols = range(topn)
-        
-        df = pd.DataFrame(index=self.doc_feat.index, columns=cols)
-        df.index.name = 'doc_order'
-        df.columns.name = 'feature'
-        for doc in self.doc_feat.index:
-            df.loc[doc,:] = list(self.get_doc_features(doc, sort=True, topn=topn).index)
+        df = self.get_summary(self.doc_feat, axis=0, topn=topn)
         
         return df
         
         
-    def get_feature_summary(self, topn=None):
+    def get_feature_doc_summary(self, topn=None):
         '''
             Creates a summary of docs most closely associated with each feature.
             topn: max number of docs to list for each feature.
         '''
 
+        df = self.get_summary(self.doc_feat, axis=1, topn=topn)
+        
+        return df
+    
+    def get_feature_summary(self, topn=None):
+        '''
+            Creates a summary basis objects most closely associated
+                with each feature.
+            topn: max number of docs to list for each feature.
+        '''
+        if self.feat_basis is None:
+            raise Exception('feature_basis has not been provided.')
+
+        df = self.get_summary(self.feat_basis, axis=0, topn=topn)
+        
+        return df
+        
+    def get_summary(self, df, axis=0, topn=None):
+        '''
+            Utility function that summarizes df by sorting 
+                rows/columns. TODO: better description
+            Input:
+                df: dataframe of values (feat_basis or doc_feat)
+                axis: basis axis to sort from. 0 means it will keep
+                    rows and sort columns for each row. 1 is vice-versa.
+                topn: number of feature ids to return.
+        '''
+        
         if topn is None:
-            index = range(self.doc_feat.shape[1])
+            index = range(df.shape[axis])
         else:
             index = range(topn)
         
-        df = pd.DataFrame(index=index, columns=self.doc_feat.columns)
-        df.index.name = 'feat_order'
-        df.columns.name = 'feature'
-        for doc in self.doc_feat.index:
-            df.loc[doc,:] = list(self.get_doc_features(doc, sort=True, topn=topn).index)
-        
-        return df
+        if axis == 0:
+            summary_df = pd.DataFrame(index=df.index, columns=index)
+            for ind in df.index:
+                row = self.get_rowcol(df, ind, sort=True, axis=axis)[:topn]
+                summary_df.loc[ind,:] = list(row.index)
+            return summary_df
+            
+        if axis == 1:
+            summary_df = pd.DataFrame(index=index, columns=df.columns)
+            for col in df.columns:
+                colval = self.get_rowcol(df, col, sort=True, axis=axis)[:topn]
+                summary_df.loc[:,col] = list(colval.index)
+            return summary_df
         
         
         
