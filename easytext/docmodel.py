@@ -12,7 +12,7 @@ class DocModel:
         It is currently being used for LDA and NMF topic models and Glove
             document representations.
     '''
-    def __init__(self, doc_features, docnames=None, featnames=None, feature_basis=None, basisnames=None, df_type=pd.SparseDataFrame, vectorizer=None, model=None):
+    def __init__(self, doc_features, feature_basis=None, docnames=None, featnames=None, basisnames=None, df_type=pd.SparseDataFrame, vectorizer=None, model=None):
         
         '''
             Represents Nd documents according to Nf features which are composed
@@ -69,12 +69,12 @@ class DocModel:
             else:
                 self.feat_basis = df_type(feature_basis)
                 
-                objrange = list(range(feature_basis.shape[1]))
-                objnames = list(objnames) if objnames is not None else objrange
+                basisrange = list(range(feature_basis.shape[1]))
+                basisnames = list(basisnames) if basisnames is not None else basisrange
                 
                 self.feat_basis.index = self.doc_feat.columns
-                self.feat_basis.columns = objnames
-                self.feat_basis.columns.name = 'object'
+                self.feat_basis.columns = basisnames
+                self.feat_basis.columns.name = 'basis'
                 
             self.Nbasis = self.feat_basis.shape[1]
             
@@ -126,7 +126,7 @@ class DocModel:
         '''
         self.check_feat_basis()
         
-        return self.get_rowcol(self.feat_basis, feature, sort=sort, topn=topn)
+        return self.get_row(self.feat_basis, feature, sort=sort, topn=topn)
         
     @staticmethod
     def get_row(df, ind, sort=True, topn=None):
@@ -156,6 +156,9 @@ class DocModel:
             Creates dataframe listing features most closely associted
                 with each doc.
             topn: max number of features to list for each doc.
+            Inputs:
+                topn: number of feature ids to return.
+                human: T/F output human readable series
         '''
         df = self.get_summary(self.doc_feat, topn=topn, human=human)
         
@@ -165,7 +168,9 @@ class DocModel:
     def get_feature_doc_summary(self, topn=None, human=False):
         '''
             Creates a summary of docs most closely associated with each feature.
-            topn: max number of docs to list for each feature.
+            Inputs:
+                topn: number of feature ids to return.
+                human: T/F output human readable series
         '''
 
         df = self.get_summary(self.doc_feat.T, topn=topn, human=human).T
@@ -176,7 +181,9 @@ class DocModel:
         '''
             Creates a summary basis objects most closely associated
                 with each feature.
-            topn: max number of docs to list for each feature.
+            Inputs:
+                topn: number of feature ids to return.
+                human: T/F output human readable series
         '''
         self.check_feat_basis()
 
@@ -193,6 +200,7 @@ class DocModel:
             Input:
                 df: dataframe of values (feat_basis or doc_feat)
                 topn: number of feature ids to return.
+                human: T/F output human readable series
         '''
         if not human:
             if topn is None:
@@ -237,7 +245,9 @@ class DocModel:
     def transform(self, bows, docnames=None, lang='en'):
         '''
             Utility function that summarizes df by sorting 
-                rows/columns. TODO: better description
+                rows/columns. Needs .model and .vectorizer
+                to be provided. Custom objects can be provided
+                as long as they have .transform() methods.
             Input:
                 df: dataframe of values (feat_basis or doc_feat)
                 axis: basis axis to sort from. 0 means it will keep
@@ -264,63 +274,4 @@ class DocModel:
         return df
     
     
-    def write_report(self, fname, save_wordmatrix=False, featurename=None, summary_topn=None, **kwargs):
-        '''
-            simply calls write_report after inputting desired dataframes.
-            inputs:
-                fname: file destination.
-                save_wordmatrix: T/F save word matrix to output. This 
-                    file can be huge, so may not always be able to do 
-                    it.
-                featurename: name of feature for sheet titles. For a topic
-                    model, should be 'topic'. For embedding model, should 
-                    be 'dimension'.
-                summary_topn: number of words/features to return in the 
-                    summary pages.
-                **kwargs goes to write_report() directly.
-        '''
-        if featurename is None:
-            featurename = 'feature'
-            
-        sheets = list()
-        sheets.append(('doc_{}'.format(featurename),self.doc_features))
-        if save_wordmatrix: sheets.append(('{}_words'.format(featurename), self.feature_words))
-        sheets.append(('doc_summary', self.doc_feature_summary(summary_topn)))
-        sheets.append(('{}_summary'.format(featurename),self.feature_words_summary(summary_topn)))
-        
-        return write_report(fname, sheets, **kwargs)
     
-
-'''      
-
-    
-def make_human_report(df):
-    
-        Creates human readable report from raw values dataframe,
-            essentially by folding columns into multi-index then 
-            sorting.
-    
-    
-    indcolname = '__indexcol__' # remporary column for sorting
-    valuescolname = 'value' # name of column in output
-    totalsindname = '__Totals__'
-    
-    # create dataframe with multi index and index column
-    mi = pd.MultiIndex.from_tuples(list(itertools.product(map(str,df.index),df.columns)))
-    hdf = pd.DataFrame(index=mi, columns=[valuescolname,indcolname])
-    for doc,val in hdf.index:
-        hdf.loc[(doc,val,),valuescolname] = df.loc[doc,val]
-    
-    # sort based on docs then values
-    hdf[indcolname] = list(hdf.index.get_level_values(0))
-    hdf = hdf.sort_values([indcolname,valuescolname],ascending=[True,False])
-    hser = hdf[valuescolname]
-    
-    # create totals value at bottom
-    totser = df.sum(axis=0).sort_values(ascending=False)
-    mi = pd.MultiIndex.from_tuples([(totalsindname,c) for c in totser.index])
-    totser.index = mi
-    hser = hser.append(totser)
-    
-    return hser
-'''
