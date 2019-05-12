@@ -103,7 +103,7 @@ class DocModel:
                 topn: number of feature ids to return.
         '''
                 
-        return self.get_rowcol(self.doc_feat, doc, sort=sort, axis=0)[:topn]
+        return self.get_row(self.doc_feat, doc, sort=sort, topn=topn)
     
         
     def get_feature_docs(self, feature, sort=False, topn=None):
@@ -114,7 +114,7 @@ class DocModel:
                 topn: number of document ids to return.
         '''
         
-        return self.get_rowcol(self.doc_feat, feature, sort=sort, axis=1)[:topn]
+        return self.get_row(self.doc_feat.T, feature, sort=sort, topn=topn)
     
     
     def get_feature_basis(self, feature, sort=False, topn=None):
@@ -126,10 +126,10 @@ class DocModel:
         '''
         self.check_feat_basis()
         
-        return self.get_rowcol(self.feat_basis, feature, sort=sort, axis=0)[:topn]
+        return self.get_rowcol(self.feat_basis, feature, sort=sort, topn=topn)
         
     @staticmethod
-    def get_rowcol(df, ind, sort=True, axis=0):
+    def get_row(df, ind, sort=True, topn=None):
         '''
             Utility function that returns row(s) or column(s) of
                 df, either sorted or not. Used in get_doc_features
@@ -141,49 +141,38 @@ class DocModel:
                     the doc.
                 topn: number of feature ids to return.
         '''
-        if axis == 0:
-            assert(ind in df.index)
-            if not sort:
-                return df.loc[ind,:]
-            else:
-                top = df.loc[ind,:].sort_values(ascending=False)
-                return top
-            
-        if axis == 1:
-            assert(ind in df.columns)
-            if not sort:
-                return df.loc[:,ind]
-            else:
-                top = df.loc[:,ind].sort_values(ascending=False)
-                return top
+        assert(ind in df.index)
+        if not sort:
+            return df.loc[ind,:]
+        else:
+            top = df.loc[ind,:].sort_values(ascending=False)
+            return top[:topn]
         
     
     # ________ Create Summary DataFrames _________
     
-    def get_doc_summary(self, topn=None):
+    def get_doc_summary(self, topn=None, human=False):
         '''
             Creates dataframe listing features most closely associted
                 with each doc.
             topn: max number of features to list for each doc.
         '''
-        df = self.get_summary(self.doc_feat, axis=0, topn=topn)
-        df.columns.name = 'nth_feature'
+        df = self.get_summary(self.doc_feat, topn=topn, human=human)
         
         return df
         
         
-    def get_feature_doc_summary(self, topn=None):
+    def get_feature_doc_summary(self, topn=None, human=False):
         '''
             Creates a summary of docs most closely associated with each feature.
             topn: max number of docs to list for each feature.
         '''
 
-        df = self.get_summary(self.doc_feat, axis=1, topn=topn)
-        df.index.name = 'nth_doc'
+        df = self.get_summary(self.doc_feat.T, topn=topn, human=human).T
         
         return df
     
-    def get_feature_summary(self, topn=None):
+    def get_feature_summary(self, topn=None, human=False):
         '''
             Creates a summary basis objects most closely associated
                 with each feature.
@@ -191,65 +180,55 @@ class DocModel:
         '''
         self.check_feat_basis()
 
-        df = self.get_summary(self.feat_basis, axis=0, topn=topn)
-        df.index.name = 'nth_basis'
+        df = self.get_summary(self.feat_basis, topn=topn, human=human)
         
         return df
         
-    def get_summary(self, df, axis=0, topn=None):
+    def get_summary(self, df, topn=None, human=False):
         '''
             Utility function that summarizes df by sorting 
-                rows/columns. TODO: better description
+                rows. To sort by columns, simply transpose the input
+                dataframe before passing to this function.
+                TODO: better description
             Input:
                 df: dataframe of values (feat_basis or doc_feat)
-                axis: basis axis to sort from. 0 means it will keep
-                    rows and sort columns for each row. 1 is vice-versa.
                 topn: number of feature ids to return.
         '''
-        
-        if topn is None:
-            index = range(df.shape[axis])
-        else:
-            index = range(topn)
-        
-        if axis == 0:
-            summary_df = pd.DataFrame(index=df.index, columns=index)
+        if not human:
+            if topn is None:
+                columns = range(df.shape[1])
+            else:
+                columns = range(topn)
+            
+            # summaries by placing index values into dataframe
+            summary_df = pd.DataFrame(index=df.index, columns=columns)
+            summary_df.columns.name = 'nth_closest'
             for ind in df.index:
-                row = self.get_rowcol(df, ind, sort=True, axis=axis)[:topn]
+                row = self.get_row(df, ind, sort=True, topn=topn)
                 summary_df.loc[ind,:] = list(row.index)
             return summary_df
+        
+        else:
             
-        if axis == 1:
-            summary_df = pd.DataFrame(index=index, columns=df.columns)
-            for col in df.columns:
-                colval = self.get_rowcol(df, col, sort=True, axis=axis)[:topn]
-                summary_df.loc[:,col] = list(colval.index)
-            return summary_df
-    
-    
-    @staticmethod
-    def get_totals(df):
-        '''
-            Gets row sum.
-        '''
-        s = df.sum(axis=0).sort_values(ascending=False)
-        return s
-        
-    
-    @staticmethod
-    def get_human_summary(df, include_totals=False):
-        
-        # create multiindex for human summary
-        prod = itertools.product(df.index, df.columns)
-        mi = pd.MultiIndex.from_tuples(list(prod))
-        hs = pd.Series(df.values.flatten(),index=mi)
-        
-        # sort on values and then index
-        hs = hs.sort_values(ascending=False)
-        hs = hs.sort_index(level=0, sort_remaining=False)
-        hs = hs.dropna()
-        
-        return hs
+            # create multiindex for human summary
+            prod = itertools.product(df.index, df.columns)
+            mi = pd.MultiIndex.from_tuples(list(prod))
+            hs = pd.Series(df.values.flatten(),index=mi)
+
+            # sort on values and then index
+            hs = hs.sort_values(ascending=False)
+            hs = hs.sort_index(level=0, sort_remaining=False)
+            hs = hs.dropna()
+            
+            # adding totals rows
+            totcolname = '__Totals__'
+            #tots = df.sum(axis=0).sort_values(ascending=False)
+            tots = df.sum(axis=0,skipna=True)#.sort_values(ascending=False)
+            tmi = pd.MultiIndex.from_tuples([(totcolname, c) for c in df.columns])
+            ts = pd.Series(tots.values,index=tmi).sort_values(ascending=False)
+            hs = ts.append(hs)
+            
+            return hs
         
         
     
