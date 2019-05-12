@@ -12,7 +12,7 @@ class DocModel:
         It is currently being used for LDA and NMF topic models and Glove
             document representations.
     '''
-    def __init__(self, doc_features, docnames=None, featnames=None, model=None, feature_words=None, vocab=None, vectorizer=None, df_type=pd.SparseDataFrame):
+    def __init__(self, doc_features, docnames=None, featnames=None, feature_basis=None, basisnames=None, model=None, vocab=None, vectorizer=None, df_type=pd.SparseDataFrame):
         
         '''
             Represents Nd documents according to Nf features which are composed
@@ -33,7 +33,8 @@ class DocModel:
         # convert doc_features to dataframe
         if isinstance(doc_features, pd.DataFrame) or isinstance(doc_features, list):
             self.doc_feat = df_type(doc_features)
-        
+            self.doc_feat.columns.name = 'feature'
+            self.doc_feat.index.name = 'docname'
         else:
             # create dataframe with provided docnames and featnames
             self.doc_feat = df_type(doc_features)
@@ -45,39 +46,40 @@ class DocModel:
             featnames = list(featnames) if featnames is not None else featrange
             
             self.doc_feat.index = docnames
+            self.doc_feat.index.name = 'docname'
             self.doc_feat.columns = featnames
+            self.doc_feat.columns.name = 'feature'
             
-        # dimension sizes
-        self.Ndocs = doc_features.shape[0]
-        self.Nfeat = doc_features.shape[1]
-        #self.Nbase = doc_features.shape[1]
-        
-        # doc_features is <Ndocs X Nfeat> and feature_words is <Nvocab X Nvocab>
-        
-        if feature_words is not None:
-            assert(doc_features.shape[1] == feature_words.shape[0])
-            assert(len(vocab) == feature_words.shape[1])
-        
-            self.feature_words = pd.DataFrame(feature_words,columns=vocab)
-            self.feature_words.index.name = 'feature'
-            self.feature_words.columns.name = 'word'
-            self.Nvocab = feature_words.shape[1]
-            self.vocab = vocab
-        
-
+        self.Ndocs = self.doc_feat.shape[0]
+        self.Nfeat = self.doc_feat.shape[1]
+            
+            
+        # format feature_basis dataframe
+        self.feat_basis = None #(in case not assigned later)
+        self.Nbasis = None
+        if feature_basis is not None:
+            assert(doc_features.shape[1] == feature_basis.shape[0])
+            
+            if isinstance(feature_basis, pd.DataFrame) or isinstance(doc_features, list):
+                self.feat_basis = df_type(feature_basis)
+                self.feat_basis.columns.name = 'feature'
+                self.feat_basis.index.name = 'docname'
+            else:
+                self.feat_basis = df_type(feature_basis)
+                
+                objrange = list(range(feature_basis.shape[1]))
+                objnames = list(objnames) if objnames is not None else objrange
+                
+                self.feat_basis.index = self.doc_feat.columns
+                self.feat_basis.columns = objnames
+                self.feat_basis.columns.name = 'object'
+                
+            self.Nobj = self.feat_basis.shape[1]
+            
         
         # optional data for storage
         self.model = model
         self.vectorizer = vectorizer
-        
-        # name documents as integers if not docnames provided
-        self.docnames = docnames if docnames is not None else list(range(self.Ndocs))
-        self.featnames = featnames if featnames is not None else list(range(self.Nfeat))
-        
-        # features are topics or dimensions in the embedding space
-        self.doc_features = pd.DataFrame(doc_features,index=self.docnames, columns=self.featnames)
-        self.doc_features.index.name = 'document'
-        self.doc_features.columns.name = 'feature'
         
 
     def _has_feature_words():
@@ -88,7 +90,26 @@ class DocModel:
             raise Exception('feature_words and/or vocab were not provided in DocModel construcor!')
         
     
-    # ________ Create Summary DataFrames _________
+    def get_rowcol(self, df, ind, sort=True, axis=0):
+        
+        if axis == 0:
+            assert(ind in df.index)
+            if not sort:
+                return df.loc[ind,:]
+            else:
+                top = df.loc[ind,:].sort_values(ascending=False)
+                return top
+            
+        if axis == 1:
+            assert(ind in df.columns)
+            if not sort:
+                return df.loc[:,ind]
+            else:
+                top = df.loc[:,ind].sort_values(ascending=False)
+                return top
+            
+    
+    # ________ Access Dataframe Features _________
     def get_doc_features(self, doc, sort=False, topn=None):
         '''
             Gives features of a given goc. If sort, will 
@@ -101,29 +122,8 @@ class DocModel:
                 topn: number of feature ids to return.
         '''
                 
-        assert(doc in self.doc_feat.index)
-        if not sort:
-            return self.doc_feat.loc[doc,:].to_dense()
-        
-        else:
-            topfeat = self.doc_feat.loc[doc,:].sort_values(ascending=False)
-            return topfeat[:topn].to_dense()
-        
-    def get_doc_summary(self, topn=None):
-        '''
-            Creates 
-        '''
-        if topn is None:
-            cols = range(self.doc_feat.shape[1])
-        else:
-            cols = range(topn)
-        
-        df = pd.DataFrame(index=self.doc_feat.index, cols=cols)
-        for doc in self.doc_feat.index:
-            df.loc[doc,:] = self.get_doc_features(doc, sort=True, topn=topn)
-        
-        return df
-        
+        return self.get_rowcol(self.doc_feat, sort=sort, axis=0)[:topn]
+    
         
     def get_feature_docs(self, feature, sort=False, topn=None):
         '''
@@ -133,27 +133,59 @@ class DocModel:
                 topn: number of document ids to return.
         '''
         
-        assert(feature in self.doc_feat.columns)
-        if not sort:
-            return self.doc_feat.loc[:,feature].to_dense()
-        
-        else:
-            topdocs = self.doc_feat.loc[:,feature].sort_values(ascending=False)
-            return topdocs[:topn].to_dense()
-        
-
-    def get_feature_summary(self, topn=None):
+        return self.get_rowcol(self.doc_feat, sort=sort, axis=1)[:topn]
+    
+    
+    def get_feature_obj(self, feature, sort=False, topn=None):
         '''
-            Creates 
+            Gives documents most closely associated with a given feature.
+            Input:
+                feature: feature id to retrieve.
+                topn: number of document ids to return.
+        '''
+        if self.feat_obj is None:
+            raise Exception('feature_obj has not been defined.')
+        
+        return self.get_rowcol(self.feat_obj, sort=sort, axis=0)[:topn]
+        
+    
+    # ________ Create Summary DataFrames _________
+    def get_doc_summary(self, topn=None):
+        '''
+            Creates dataframe listing features most closely associted
+                with each doc.
+            topn: max number of features to list for each doc.
         '''
         if topn is None:
-            cols = range(self.doc_feat.shape[0])
+            cols = range(self.doc_feat.shape[1])
         else:
             cols = range(topn)
         
-        df = pd.DataFrame(index=self.doc_feat.index, cols=cols)
-        for feat in self.doc_feat.columns:
-            df.loc[doc,:] = self.get_doc_features(doc, sort=True, topn=topn)
+        df = pd.DataFrame(index=self.doc_feat.index, columns=cols)
+        df.index.name = 'doc_order'
+        df.columns.name = 'feature'
+        for doc in self.doc_feat.index:
+            df.loc[doc,:] = list(self.get_doc_features(doc, sort=True, topn=topn).index)
+        
+        return df
+        
+        
+    def get_feature_summary(self, topn=None):
+        '''
+            Creates a summary of docs most closely associated with each feature.
+            topn: max number of docs to list for each feature.
+        '''
+
+        if topn is None:
+            index = range(self.doc_feat.shape[1])
+        else:
+            index = range(topn)
+        
+        df = pd.DataFrame(index=index, columns=self.doc_feat.columns)
+        df.index.name = 'feat_order'
+        df.columns.name = 'feature'
+        for doc in self.doc_feat.index:
+            df.loc[doc,:] = list(self.get_doc_features(doc, sort=True, topn=topn).index)
         
         return df
         
@@ -199,6 +231,12 @@ class DocModel:
         
         return df
         
+    
+    
+    
+    
+    
+    
     
     def get_feature_words(self, feature, topn=None):
         '''
